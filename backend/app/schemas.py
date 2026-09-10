@@ -48,3 +48,20 @@ class RecipeOut(BaseModel):
     fat: float | None
     carbs: float | None
     ingredients: list[RecipeIngredientOut]
+
+
+class GroceryListRequest(BaseModel):
+    household_id: str
+    recipe_ids: list[int]
+    servings: dict[int, int]
+
+
+class GroceryLine(BaseModel):
+    ingredient_name: str
+    needed: float
+    unit: str
+
+
+class GroceryListResponse(BaseModel):
+    have: list[GroceryLine]
+    need: list[GroceryLine]
