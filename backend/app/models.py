@@ -1,4 +1,6 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey
+from sqlalchemy.orm import relationship
+from datetime import datetime, timezone
 from app.db import Base
 
 
@@ -9,11 +11,6 @@ class Ingredient(Base):
     name = Column(String, unique=True, nullable=False, index=True)
     category = Column(String, nullable=True)
     default_unit = Column(String, nullable=True)
-
-
-from sqlalchemy import DateTime, Float, ForeignKey
-from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
 
 
 class InventoryItem(Base):

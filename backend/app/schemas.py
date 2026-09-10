@@ -1,13 +1,11 @@
 from pydantic import BaseModel
+from datetime import datetime
 
 
 class IngredientMatch(BaseModel):
     id: int
     name: str
     score: float
-
-
-from datetime import datetime
 
 
 class InventoryItemCreate(BaseModel):
