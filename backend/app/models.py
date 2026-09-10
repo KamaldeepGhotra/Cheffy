@@ -24,3 +24,31 @@ class InventoryItem(Base):
     added_date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     ingredient = relationship("Ingredient")
+
+
+class Recipe(Base):
+    __tablename__ = "recipes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    instructions = Column(String, nullable=False)
+    calories = Column(Float, nullable=True)
+    protein = Column(Float, nullable=True)
+    fat = Column(Float, nullable=True)
+    carbs = Column(Float, nullable=True)
+    source = Column(String, default="ai_generated")
+
+    ingredients = relationship("RecipeIngredient", back_populates="recipe", cascade="all, delete-orphan")
+
+
+class RecipeIngredient(Base):
+    __tablename__ = "recipe_ingredients"
+
+    id = Column(Integer, primary_key=True, index=True)
+    recipe_id = Column(Integer, ForeignKey("recipes.id"), nullable=False)
+    ingredient_id = Column(Integer, ForeignKey("ingredients.id"), nullable=False)
+    quantity = Column(Float, nullable=False)
+    unit = Column(String, nullable=False)
+
+    recipe = relationship("Recipe", back_populates="ingredients")
+    ingredient = relationship("Ingredient")

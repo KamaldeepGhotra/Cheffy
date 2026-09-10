@@ -26,3 +26,25 @@ class InventoryItemOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class RecipeSearchRequest(BaseModel):
+    query: str
+
+
+class RecipeIngredientOut(BaseModel):
+    ingredient_id: int
+    ingredient_name: str
+    quantity: float
+    unit: str
+
+
+class RecipeOut(BaseModel):
+    id: int
+    name: str
+    instructions: str
+    calories: float | None
+    protein: float | None
+    fat: float | None
+    carbs: float | None
+    ingredients: list[RecipeIngredientOut]
