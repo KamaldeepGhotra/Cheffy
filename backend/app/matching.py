@@ -33,6 +33,5 @@ def resolve_or_create_ingredient(
 
     new_ingredient = Ingredient(name=_normalize(name), category=category, default_unit=default_unit)
     db.add(new_ingredient)
-    db.commit()
-    db.refresh(new_ingredient)
+    db.flush()
     return new_ingredient
