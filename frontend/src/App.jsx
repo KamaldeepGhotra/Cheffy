@@ -2,11 +2,13 @@ import { useState } from 'react'
 import InventoryPage from './pages/InventoryPage.jsx'
 import RecipeSearchPage from './pages/RecipeSearchPage.jsx'
 import GroceryListPage from './pages/GroceryListPage.jsx'
+import MealPlanPage from './pages/MealPlanPage.jsx'
 
 const TABS = {
   inventory: InventoryPage,
   recipes: RecipeSearchPage,
   grocery: GroceryListPage,
+  'meal plan': MealPlanPage,
 }
 
 export default function App() {

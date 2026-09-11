@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from datetime import datetime
+from pydantic import BaseModel, Field
+from datetime import date, datetime
 
 
 class IngredientMatch(BaseModel):
@@ -65,3 +65,22 @@ class GroceryLine(BaseModel):
 class GroceryListResponse(BaseModel):
     have: list[GroceryLine]
     need: list[GroceryLine]
+
+
+class MealPlanEntryCreate(BaseModel):
+    household_id: str
+    week_start: date
+    day: int = Field(ge=0, le=6)
+    recipe_id: int
+    servings: int = Field(default=1, ge=1)
+    assigned_to: str
+
+
+class MealPlanEntryOut(BaseModel):
+    id: int
+    week_start: date
+    day: int
+    recipe_id: int
+    recipe_name: str
+    servings: int
+    assigned_to: str
