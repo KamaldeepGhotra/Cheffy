@@ -54,3 +54,29 @@ def search_recipe(payload: RecipeSearchRequest, db: Session = Depends(get_db)):
         carbs=recipe.carbs,
         ingredients=ingredient_outs,
     )
+
+
+@router.get("", response_model=list[RecipeOut])
+def list_recipes(household_id: str | None = None, db: Session = Depends(get_db)):
+    recipes = db.query(Recipe).order_by(Recipe.id.desc()).all()
+    return [
+        RecipeOut(
+            id=recipe.id,
+            name=recipe.name,
+            instructions=recipe.instructions,
+            calories=recipe.calories,
+            protein=recipe.protein,
+            fat=recipe.fat,
+            carbs=recipe.carbs,
+            ingredients=[
+                RecipeIngredientOut(
+                    ingredient_id=ri.ingredient_id,
+                    ingredient_name=ri.ingredient.name,
+                    quantity=ri.quantity,
+                    unit=ri.unit,
+                )
+                for ri in recipe.ingredients
+            ],
+        )
+        for recipe in recipes
+    ]
