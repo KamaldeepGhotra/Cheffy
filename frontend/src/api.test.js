@@ -12,9 +12,22 @@ function respond(status, body, statusText = '') {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  vi.unstubAllEnvs()
 })
 
 describe('request helper', () => {
+  it('reads the base URL from VITE_API_URL', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://cheffy-api.example.com')
+    vi.resetModules()
+    const { listInventory: listInventoryHosted } = await import('./api.js')
+    const fetchMock = vi.fn().mockResolvedValue(respond(200, []))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await listInventoryHosted('roommates')
+
+    expect(fetchMock.mock.calls[0][0]).toBe('https://cheffy-api.example.com/inventory?household_id=roommates')
+  })
+
   it('sends JSON bodies with the right header and parses the response', async () => {
     const fetchMock = vi.fn().mockResolvedValue(respond(201, { id: 1 }))
     vi.stubGlobal('fetch', fetchMock)
@@ -23,7 +36,7 @@ describe('request helper', () => {
 
     expect(result).toEqual({ id: 1 })
     const [url, init] = fetchMock.mock.calls[0]
-    expect(url).toMatch(/\/inventory$/)
+    expect(url).toBe('http://localhost:8000/inventory')
     expect(init.method).toBe('POST')
     expect(init.headers['Content-Type']).toBe('application/json')
     expect(JSON.parse(init.body)).toEqual({ household_id: 'roommates', ingredient_name: 'eggs', quantity: 12, unit: 'each' })
