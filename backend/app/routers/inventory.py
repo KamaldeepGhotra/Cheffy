@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 from app.db import get_db
 from app.matching import resolve_or_create_ingredient
 from app.models import InventoryItem
 from app.schemas import InventoryItemCreate, InventoryItemOut
+from app.units import normalize_unit
 
 router = APIRouter(prefix="/inventory", tags=["inventory"])
 
@@ -21,15 +22,25 @@ def _to_out(item: InventoryItem) -> InventoryItemOut:
 
 
 @router.post("", response_model=InventoryItemOut, status_code=201)
-def add_inventory_item(payload: InventoryItemCreate, db: Session = Depends(get_db)):
+def add_inventory_item(payload: InventoryItemCreate, response: Response, db: Session = Depends(get_db)):
     ingredient = resolve_or_create_ingredient(db, payload.ingredient_name)
-    item = InventoryItem(
-        ingredient_id=ingredient.id,
-        household_id=payload.household_id,
-        quantity=payload.quantity,
-        unit=payload.unit,
+    unit = normalize_unit(payload.unit)
+    item = (
+        db.query(InventoryItem)
+        .filter_by(household_id=payload.household_id, ingredient_id=ingredient.id, unit=unit)
+        .first()
     )
-    db.add(item)
+    if item:
+        item.quantity += payload.quantity
+        response.status_code = 200
+    else:
+        item = InventoryItem(
+            ingredient_id=ingredient.id,
+            household_id=payload.household_id,
+            quantity=payload.quantity,
+            unit=unit,
+        )
+        db.add(item)
     db.commit()
     db.refresh(item)
     return _to_out(item)
