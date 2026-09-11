@@ -1,3 +1,5 @@
+> **Superseded on 2026-09-11 by [2026-09-11-mvp-plan.md](2026-09-11-mvp-plan.md).** That file is now the source of truth for tasks, owners, contracts, and order. This document is kept for the history of how Workstreams 1–3 were split.
+
 # Cheffy — Next-Phase Work Split
 
 The core loop (inventory, AI recipe search, grocery list) is done and working on `main` — see [2026-09-10-core-loop.md](2026-09-10-core-loop.md). This document splits the next round of feature work into two independent workstreams so you and your teammate can each hand one .md file to your own Claude and start immediately, in parallel, on separate branches.

@@ -1,3 +1,5 @@
+> **Re-scoped on 2026-09-11.** The intent of this plan survives, but the tasks are now K1–K6 in [2026-09-11-mvp-plan.md](2026-09-11-mvp-plan.md), with pinned contracts (Gemini dict v2 with `servings` and base ingredient names, `compute_match` returning missing names, ranked `GET /recipes` extending the function that already exists on `main`, and the grocery page driven by the meal plan instead of a checkbox picker). Read the MVP plan first; use this file only for the worked code examples.
+
 # Recipe Recommendations + Auto Grocery List Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
