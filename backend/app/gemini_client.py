@@ -20,6 +20,6 @@ Nutrition values are per serving.
 
 
 def get_recipe_info(query: str) -> dict:
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel("gemini-3.6-flash")
     response = model.generate_content(PROMPT_TEMPLATE.format(query=query))
     return json.loads(response.text)
