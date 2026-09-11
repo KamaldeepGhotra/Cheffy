@@ -38,6 +38,21 @@ describe('parseInventoryInput', () => {
     expect(parseInventoryInput('1 1/2 cups rice')).toMatchObject({ quantity: 1.5, unit: 'cup', name: 'rice' })
   })
 
+  it('splits a number glued to a known unit', () => {
+    expect(parseInventoryInput('500g sugar')).toEqual({
+      quantity: 500, unit: 'g', name: 'sugar', unitRecognized: true,
+    })
+    expect(parseInventoryInput('2lb chicken')).toMatchObject({ quantity: 2, unit: 'lb', name: 'chicken' })
+    expect(parseInventoryInput('1.5kg potatoes')).toMatchObject({ quantity: 1.5, unit: 'kg' })
+    expect(parseInventoryInput('3Cups rice')).toMatchObject({ quantity: 3, unit: 'cup' })
+  })
+
+  it('leaves a number glued to a non-unit alone', () => {
+    expect(parseInventoryInput('7up')).toEqual({
+      quantity: 1, unit: 'each', name: '7up', unitRecognized: true,
+    })
+  })
+
   it('drops a leading "of" after the unit', () => {
     expect(parseInventoryInput('2 cups of rice').name).toBe('rice')
   })

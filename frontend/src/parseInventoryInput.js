@@ -1,6 +1,7 @@
 import { normalizeUnit, DEFAULT_UNIT } from './units.js'
 
 const NUMBER = /^(\d+(?:\.\d+)?|\d+\/\d+)$/
+const GLUED_UNIT = /^(\d+(?:\.\d+)?)([a-z]+)$/i
 
 function toNumber(token) {
   if (token.includes('/')) {
@@ -17,6 +18,12 @@ function toNumber(token) {
 export function parseInventoryInput(text) {
   const tokens = text.trim().split(/\s+/).filter(Boolean)
   if (tokens.length === 0) return null
+
+  // "500g" / "2lb" / "1.5kg" -> "500 g" / "2 lb" / "1.5 kg", only when the suffix is a known unit
+  const glued = tokens[0].match(GLUED_UNIT)
+  if (glued && normalizeUnit(glued[2])) {
+    tokens.splice(0, 1, glued[1], glued[2])
+  }
 
   let quantity = 1
   let quantityGiven = false
