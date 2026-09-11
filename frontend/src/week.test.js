@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { startOfWeek, shiftWeeks, dayOfWeek, toISODate } from './week.js'
+import { DAY_NAMES, dayOfWeek, shiftWeeks, startOfWeek, toISODate, todayIndex } from './week.js'
 
 describe('week helpers', () => {
   it('finds the Monday of a mid-week date', () => {
@@ -28,5 +28,31 @@ describe('week helpers', () => {
   it('resolves a day index within the week', () => {
     const start = startOfWeek(new Date(2026, 8, 7))
     expect(toISODate(dayOfWeek(start, 6))).toBe('2026-09-13')
+  })
+})
+
+describe('todayIndex', () => {
+  it('maps Monday to 0', () => {
+    expect(todayIndex(new Date(2026, 8, 7))).toBe(0)
+  })
+
+  it('maps Sunday to 6, not 0 like Date.getDay()', () => {
+    expect(todayIndex(new Date(2026, 8, 13))).toBe(6)
+  })
+
+  it('maps a mid-week day', () => {
+    expect(todayIndex(new Date(2026, 8, 10))).toBe(3)
+  })
+
+  it('ignores the time of day', () => {
+    expect(todayIndex(new Date(2026, 8, 13, 23, 59, 59))).toBe(6)
+  })
+
+  it('lines up with DAY_NAMES', () => {
+    expect(DAY_NAMES[todayIndex(new Date(2026, 8, 11))]).toBe('Fri')
+  })
+
+  it('defaults to now', () => {
+    expect(todayIndex()).toBe(todayIndex(new Date()))
   })
 })

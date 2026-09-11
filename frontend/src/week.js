@@ -1,10 +1,14 @@
 export const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
+// Index of `date` within a Monday-start week: 0 = Monday ... 6 = Sunday, local time.
+export function todayIndex(date = new Date()) {
+  return (date.getDay() + 6) % 7
+}
+
 // Monday of the week containing `date`, as a local-time Date at midnight.
 export function startOfWeek(date) {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-  const offset = (d.getDay() + 6) % 7
-  d.setDate(d.getDate() - offset)
+  d.setDate(d.getDate() - todayIndex(d))
   return d
 }
 

@@ -1,78 +1,81 @@
-const BASE_URL = 'http://localhost:8000'
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
-export async function addInventoryItem({ householdId, ingredientName, quantity, unit }) {
-  const response = await fetch(`${BASE_URL}/inventory`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      household_id: householdId,
-      ingredient_name: ingredientName,
-      quantity,
-      unit,
+// Every call goes through here. `body` is a plain object and is sent as JSON.
+// Non-2xx responses throw an Error carrying the server's `detail` message;
+// 204 responses resolve to undefined.
+async function request(path, { body, ...options } = {}) {
+  const response = await fetch(`${BASE_URL}${path}`, {
+    ...options,
+    ...(body !== undefined && {
+      headers: { 'Content-Type': 'application/json', ...options.headers },
+      body: JSON.stringify(body),
     }),
   })
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => ({}))
+    const detail = typeof errorBody.detail === 'string' ? errorBody.detail : undefined
+    throw new Error(detail ?? (response.statusText || `Request failed with status ${response.status}`))
+  }
+  if (response.status === 204) return undefined
   return response.json()
+}
+
+export async function addInventoryItem({ householdId, ingredientName, quantity, unit }) {
+  return request('/inventory', {
+    method: 'POST',
+    body: { household_id: householdId, ingredient_name: ingredientName, quantity, unit },
+  })
 }
 
 export async function listInventory(householdId) {
-  const response = await fetch(`${BASE_URL}/inventory?household_id=${encodeURIComponent(householdId)}`)
-  return response.json()
+  const params = new URLSearchParams({ household_id: householdId })
+  return request(`/inventory?${params}`)
 }
 
 export async function searchIngredients(query) {
-  const response = await fetch(`${BASE_URL}/ingredients/search?q=${encodeURIComponent(query)}`)
-  return response.json()
+  const params = new URLSearchParams({ q: query })
+  return request(`/ingredients/search?${params}`)
 }
 
 export async function searchRecipe(query) {
-  const response = await fetch(`${BASE_URL}/recipes/search`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query }),
-  })
-  return response.json()
+  return request('/recipes/search', { method: 'POST', body: { query } })
 }
 
 export async function generateGroceryList({ householdId, recipeIds, servings }) {
-  const response = await fetch(`${BASE_URL}/grocery-list`, {
+  return request('/grocery-list', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ household_id: householdId, recipe_ids: recipeIds, servings }),
+    body: { household_id: householdId, recipe_ids: recipeIds, servings },
   })
-  return response.json()
 }
 
 export async function deleteInventoryItem(itemId) {
-  await fetch(`${BASE_URL}/inventory/${itemId}`, { method: 'DELETE' })
+  return request(`/inventory/${itemId}`, { method: 'DELETE' })
 }
 
 export async function listRecipes(householdId) {
-  const response = await fetch(`${BASE_URL}/recipes?household_id=${encodeURIComponent(householdId)}`)
-  return response.json()
+  const params = new URLSearchParams({ household_id: householdId })
+  return request(`/recipes?${params}`)
 }
 
 export async function getMealPlan(householdId, weekStart) {
   const params = new URLSearchParams({ household_id: householdId, week_start: weekStart })
-  const response = await fetch(`${BASE_URL}/meal-plan?${params}`)
-  return response.json()
+  return request(`/meal-plan?${params}`)
 }
 
 export async function addMealPlanEntry({ householdId, weekStart, day, recipeId, servings, assignedTo }) {
-  const response = await fetch(`${BASE_URL}/meal-plan`, {
+  return request('/meal-plan', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+    body: {
       household_id: householdId,
       week_start: weekStart,
       day,
       recipe_id: recipeId,
       servings,
       assigned_to: assignedTo,
-    }),
+    },
   })
-  return response.json()
 }
 
 export async function deleteMealPlanEntry(entryId) {
-  await fetch(`${BASE_URL}/meal-plan/${entryId}`, { method: 'DELETE' })
+  return request(`/meal-plan/${entryId}`, { method: 'DELETE' })
 }
