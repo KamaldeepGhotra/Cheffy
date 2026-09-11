@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Date, DateTime, Float, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 from app.db import Base
@@ -52,3 +52,17 @@ class RecipeIngredient(Base):
 
     recipe = relationship("Recipe", back_populates="ingredients")
     ingredient = relationship("Ingredient")
+
+
+class MealPlanEntry(Base):
+    __tablename__ = "meal_plan_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    household_id = Column(String, nullable=False, index=True)
+    week_start = Column(Date, nullable=False, index=True)
+    day = Column(Integer, nullable=False)
+    recipe_id = Column(Integer, ForeignKey("recipes.id"), nullable=False)
+    servings = Column(Integer, nullable=False, default=1)
+    assigned_to = Column(String, nullable=False)
+
+    recipe = relationship("Recipe")

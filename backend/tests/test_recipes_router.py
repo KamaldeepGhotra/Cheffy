@@ -41,3 +41,27 @@ def test_search_recipe_creates_recipe_with_resolved_ingredients(mock_get_info, d
     assert names == {"chicken breast", "white rice"}
 
     app.dependency_overrides.clear()
+
+
+def test_list_recipes_returns_saved_recipes_newest_first(db_session):
+    from app.models import Ingredient, Recipe, RecipeIngredient
+
+    rice = Ingredient(name="white rice")
+    db_session.add(rice)
+    db_session.flush()
+    first = Recipe(name="First", instructions="a")
+    second = Recipe(name="Second", instructions="b")
+    db_session.add_all([first, second])
+    db_session.flush()
+    db_session.add(RecipeIngredient(recipe_id=second.id, ingredient_id=rice.id, quantity=2, unit="cup"))
+    db_session.commit()
+
+    client = make_client(db_session)
+    response = client.get("/recipes")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert [r["name"] for r in body] == ["Second", "First"]
+    assert body[0]["ingredients"][0]["ingredient_name"] == "white rice"
+
+    app.dependency_overrides.clear()

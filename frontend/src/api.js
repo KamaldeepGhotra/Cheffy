@@ -45,3 +45,34 @@ export async function generateGroceryList({ householdId, recipeIds, servings }) 
 export async function deleteInventoryItem(itemId) {
   await fetch(`${BASE_URL}/inventory/${itemId}`, { method: 'DELETE' })
 }
+
+export async function listRecipes(householdId) {
+  const response = await fetch(`${BASE_URL}/recipes?household_id=${encodeURIComponent(householdId)}`)
+  return response.json()
+}
+
+export async function getMealPlan(householdId, weekStart) {
+  const params = new URLSearchParams({ household_id: householdId, week_start: weekStart })
+  const response = await fetch(`${BASE_URL}/meal-plan?${params}`)
+  return response.json()
+}
+
+export async function addMealPlanEntry({ householdId, weekStart, day, recipeId, servings, assignedTo }) {
+  const response = await fetch(`${BASE_URL}/meal-plan`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      household_id: householdId,
+      week_start: weekStart,
+      day,
+      recipe_id: recipeId,
+      servings,
+      assigned_to: assignedTo,
+    }),
+  })
+  return response.json()
+}
+
+export async function deleteMealPlanEntry(entryId) {
+  await fetch(`${BASE_URL}/meal-plan/${entryId}`, { method: 'DELETE' })
+}

@@ -8,6 +8,7 @@ The core loop (inventory, AI recipe search, grocery list) is done and working on
 |---|---|---|---|
 | 1. Recipe Recommendations + Auto Grocery List | **Kam** | `feature/recipe-recommendations` | In progress |
 | 2. Inventory Add UX Redesign | **Andreas** | `feature/inventory-ux` | Done, PR #1 |
+| 3. Meal Plan | **Andreas** | `feature/meal-plan` | Done, PR #2 (stacked on #1) |
 
 Tell your Claude session which name you are at the start so it works
 the right branch and doesn't touch the other person's files.
@@ -31,6 +32,12 @@ This is a fully-specified implementation plan (models, endpoints, exact code, te
 
 Implemented and open as PR #1. The brief was intentionally open; the design that was chosen and what shipped are recorded in the "Decision" section at the bottom of the brief. Frontend-only, no backend contract changes.
 
+### Workstream 3: Meal Plan — Andreas, DONE (PR #2)
+
+**Read:** [2026-09-11-meal-plan.md](2026-09-11-meal-plan.md)
+
+Spec flow 4. Picked up after Workstream 2 since it touched nothing in Workstream 1. **One overlap to know about:** it adds a minimal `GET /recipes` at the end of `backend/app/routers/recipes.py` so the meal-plan picker has a list to choose from. Workstream 1's Task 4 should extend that function (add `match_percentage`, sort) rather than add a second one. Details in the meal-plan doc.
+
 ## Why split this way
 
 The two workstreams touch almost entirely different files:
@@ -41,7 +48,7 @@ The only shared file is `frontend/src/api.js` (Workstream 1 adds `listRecipes`/`
 
 ## Merging back
 
-- [ ] Kam reviews and merges PR #1 (`feature/inventory-ux`) into `main`
+- [ ] Kam reviews and merges PR #1 (`feature/inventory-ux`) into `main`, then PR #2 (`feature/meal-plan`)
 - [ ] Kam merges `main` into `feature/recipe-recommendations` before finishing, resolving the small `api.js` conflict if it comes up (keep both sets of changes — they're additive)
 - [ ] Run `cd backend && python -m pytest -v` on `main` after both are merged — should still be all-green
 - [ ] Manually re-verify the full app in the browser after merge (both features together)
