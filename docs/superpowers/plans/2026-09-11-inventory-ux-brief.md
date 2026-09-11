@@ -38,3 +38,47 @@ Work on `feature/inventory-ux`, branched from `main` (which has the working core
 3. Get explicit approval on the design before implementing (this is a real UX decision, not a bug fix).
 4. Implement with tests where there's real logic (e.g. a parser, if you go the "smart input" direction) — plain UI wiring doesn't need automated tests, same as the rest of this frontend, but verify manually in a browser before calling it done.
 5. Commit as you go, no AI-authorship attribution.
+
+## Decision (2026-09-11)
+
+Settled after brainstorming; implemented on `feature/inventory-ux`, PR #1.
+
+**Smart single input.** One text box parses `<quantity> <unit> <name>` on
+every keystroke and shows a preview line ("Adding ground beef · 3 lb")
+before submit. Rules, in `frontend/src/parseInventoryInput.js`:
+
+- Leading number is the quantity. Accepts integers, decimals, fractions
+  (`1/2`) and mixed numbers (`1 1/2`). No number means quantity 1.
+- The next word is checked against the unit list. If it matches, it's
+  the unit; if not, it stays part of the name and the preview warns
+  that `each` was used.
+- A leading "of" after the unit is dropped (`2 cups of rice`).
+- Everything left is the ingredient name, which feeds the existing
+  autocomplete endpoint. Picking a suggestion rewrites the input with
+  the canonical name but keeps quantity and unit.
+
+**Fixed unit list with aliases**, in `frontend/src/units.js`: lb, oz, g,
+kg, cup, tbsp, tsp, ml, l, each, clove, can, bag, box, bunch, pack,
+slice, piece. Aliases like `lbs`, `pounds`, `cups`, `tablespoons`
+normalize to the canonical form so the grocery-list aggregation (which
+keys on ingredient + unit) doesn't fragment. This is the only place
+unit spelling is enforced; the backend still stores whatever string it
+receives.
+
+**Recent-add chips.** The last 8 distinct adds are kept in
+`localStorage` under `cheffy.recentAdds`. Tapping a chip re-adds the
+same quantity and unit. Chosen over a backend "frequent items" endpoint
+to keep the change frontend-only; revisit if the two households' chips
+should be shared.
+
+**Rejected:** separate fields with a unit dropdown (slower for bulk
+entry, which is the whole point), and a "fields" fallback toggle next to
+the smart input (extra surface for a parser that hasn't shown it needs
+one yet — add it if real use turns up inputs it can't handle).
+
+**Also shipped:** per-row remove button using the existing
+`DELETE /inventory/{id}`, and a base stylesheet (`frontend/src/index.css`)
+because the app set no colors at all and was unreadable in dark mode.
+
+**Tests:** parser has vitest coverage (`cd frontend && npm test`). UI
+wiring verified manually in the browser, per step 4 above.
