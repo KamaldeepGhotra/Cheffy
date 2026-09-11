@@ -14,7 +14,7 @@ export default function App() {
   const ActivePage = TABS[tab]
 
   return (
-    <div style={{ fontFamily: 'sans-serif', padding: '1rem' }}>
+    <div className="app">
       <h1>Cheffy</h1>
       <nav>
         {Object.keys(TABS).map((key) => (

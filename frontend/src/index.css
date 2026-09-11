@@ -1,0 +1,64 @@
+:root {
+  color-scheme: light dark;
+  --bg: #fafaf7;
+  --fg: #1c1c1a;
+  --muted: #6b6b66;
+  --line: #d9d9d3;
+  --accent: #2f7d4f;
+  --accent-fg: #ffffff;
+  --chip: #eeeee8;
+  --warn: #b25b00;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161614;
+    --fg: #ecece6;
+    --muted: #9a9a92;
+    --line: #333330;
+    --accent: #4caf76;
+    --accent-fg: #0f1a13;
+    --chip: #24241f;
+    --warn: #f0a050;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.4 system-ui, -apple-system, sans-serif;
+}
+.app { max-width: 640px; margin: 0 auto; padding: 1.5rem 1rem; }
+h1 { margin: 0 0 1rem; font-size: 1.75rem; }
+h2 { margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
+h3 { margin: 1rem 0 0.5rem; font-size: 1rem; color: var(--muted); }
+nav { display: flex; gap: 0.5rem; }
+nav button { text-transform: capitalize; }
+button, input {
+  font: inherit;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+}
+button { cursor: pointer; }
+button:disabled { cursor: default; opacity: 0.6; }
+button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+ul { list-style: none; padding: 0; margin: 0; }
+li { padding: 0.4rem 0; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 1rem; }
+li .muted { color: var(--muted); }
+
+.smart-add { display: flex; gap: 0.5rem; }
+.smart-add input { flex: 1; }
+.preview { min-height: 1.4em; margin: 0.4rem 0 0; font-size: 0.9rem; color: var(--muted); }
+.preview .warn { color: var(--warn); }
+.suggestions { border: 1px solid var(--line); border-radius: 6px; margin-top: 0.4rem; }
+.suggestions li { padding: 0.4rem 0.75rem; cursor: pointer; border-bottom: 1px solid var(--line); }
+.suggestions li:last-child { border-bottom: 0; }
+.suggestions li:hover { background: var(--chip); }
+.chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+.chip { background: var(--chip); border-color: transparent; padding: 0.3rem 0.7rem; border-radius: 999px; font-size: 0.9rem; }
+.chip .muted { color: var(--muted); margin-left: 0.3rem; }
+.remove { background: transparent; border: 0; color: var(--muted); padding: 0 0.25rem; }
+.remove:hover { color: var(--fg); }

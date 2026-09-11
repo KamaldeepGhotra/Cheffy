@@ -41,3 +41,7 @@ export async function generateGroceryList({ householdId, recipeIds, servings }) 
   })
   return response.json()
 }
+
+export async function deleteInventoryItem(itemId) {
+  await fetch(`${BASE_URL}/inventory/${itemId}`, { method: 'DELETE' })
+}
