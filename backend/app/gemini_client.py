@@ -1,7 +1,9 @@
 import json
 import os
 import google.generativeai as genai
+from dotenv import load_dotenv
 
+load_dotenv()
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY", ""))
 
 PROMPT_TEMPLATE = """You are a recipe assistant. For the dish "{query}", respond with ONLY a JSON object \
@@ -21,5 +23,8 @@ Nutrition values are per serving.
 
 def get_recipe_info(query: str) -> dict:
     model = genai.GenerativeModel("gemini-3.6-flash")
-    response = model.generate_content(PROMPT_TEMPLATE.format(query=query))
+    response = model.generate_content(
+        PROMPT_TEMPLATE.format(query=query),
+        generation_config={"response_mime_type": "application/json"},
+    )
     return json.loads(response.text)
