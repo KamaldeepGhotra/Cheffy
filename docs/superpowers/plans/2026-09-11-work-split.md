@@ -2,9 +2,17 @@
 
 The core loop (inventory, AI recipe search, grocery list) is done and working on `main` — see [2026-09-10-core-loop.md](2026-09-10-core-loop.md). This document splits the next round of feature work into two independent workstreams so you and your teammate can each hand one .md file to your own Claude and start immediately, in parallel, on separate branches.
 
-## Pick one workstream each
+## Assignments
 
-### Workstream 1: Recipe Recommendations + Auto Grocery List
+| Workstream | Owner | Branch | Status |
+|---|---|---|---|
+| 1. Recipe Recommendations + Auto Grocery List | **Kam** | `feature/recipe-recommendations` | In progress |
+| 2. Inventory Add UX Redesign | **Andreas** | `feature/inventory-ux` | Done, PR #1 |
+
+Tell your Claude session which name you are at the start so it works
+the right branch and doesn't touch the other person's files.
+
+### Workstream 1: Recipe Recommendations + Auto Grocery List — Kam
 
 **Read this and start:** [2026-09-11-recipe-recommendations-plan.md](2026-09-11-recipe-recommendations-plan.md)
 
@@ -15,7 +23,7 @@ This is a fully-specified implementation plan (models, endpoints, exact code, te
 - A new `POST /recipes/suggest` endpoint that asks Gemini for recipes based on your current inventory (not just a typed dish name)
 - Grocery list page gets a recipe picker (checkboxes) instead of typing in recipe IDs by hand
 
-### Workstream 2: Inventory Add UX Redesign — DONE (PR #1)
+### Workstream 2: Inventory Add UX Redesign — Andreas, DONE (PR #1)
 
 **Read this and start:** [2026-09-11-inventory-ux-brief.md](2026-09-11-inventory-ux-brief.md)
 
@@ -33,8 +41,8 @@ The only shared file is `frontend/src/api.js` (Workstream 1 adds `listRecipes`/`
 
 ## Merging back
 
-- [ ] Whoever finishes first merges their branch into `main`
-- [ ] The second person rebases or merges `main` into their branch before finishing, resolving the small `api.js` conflict if it comes up (keep both sets of changes — they're additive)
+- [ ] Kam reviews and merges PR #1 (`feature/inventory-ux`) into `main`
+- [ ] Kam merges `main` into `feature/recipe-recommendations` before finishing, resolving the small `api.js` conflict if it comes up (keep both sets of changes — they're additive)
 - [ ] Run `cd backend && python -m pytest -v` on `main` after both are merged — should still be all-green
 - [ ] Manually re-verify the full app in the browser after merge (both features together)
 
