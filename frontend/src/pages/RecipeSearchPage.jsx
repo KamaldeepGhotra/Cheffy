@@ -38,57 +38,75 @@ function IngredientRows({ items }) {
   )
 }
 
-function RecipeCard({ recipe, open, onToggle, plannedEntryId, busy, onPlan, onUndo }) {
+function RecipeCard({ recipe, onOpen }) {
+  return (
+    <button type="button" className="card recipe-card" onClick={onOpen}>
+      <span className={badgeClass(recipe.match_percentage)}>{Math.round(recipe.match_percentage)}%</span>
+      <span className="recipe-title">{recipe.name}</span>
+      <span className="recipe-missing">{missingLine(recipe.missing_ingredients)}</span>
+    </button>
+  )
+}
+
+function RecipeSheet({ recipe, plannedEntryId, busy, onPlan, onUndo, onClose }) {
   const missing = new Set(recipe.missing_ingredients)
   const need = recipe.ingredients.filter((item) => missing.has(item.ingredient_name))
   const have = recipe.ingredients.filter((item) => !missing.has(item.ingredient_name))
 
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
   return (
-    <article className="card recipe-card">
-      <button type="button" className="recipe-head" onClick={onToggle} aria-expanded={open}>
-        <span className="recipe-title">{recipe.name}</span>
-        <span className={badgeClass(recipe.match_percentage)}>{Math.round(recipe.match_percentage)}%</span>
-      </button>
-      <p className="recipe-missing">{missingLine(recipe.missing_ingredients)}</p>
-      {open && (
-        <div className="recipe-body">
-          {need.length > 0 ? (
+    <div className="sheet-backdrop" onClick={onClose}>
+      <div className="sheet" role="dialog" aria-modal="true" aria-label={recipe.name} onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-head">
+          <div>
+            <span className={badgeClass(recipe.match_percentage)}>{Math.round(recipe.match_percentage)}% of ingredients on hand</span>
+            <h3>{recipe.name}</h3>
+          </div>
+          <button type="button" className="btn btn-ghost" onClick={onClose} aria-label="Close">×</button>
+        </div>
+        {need.length > 0 ? (
+          <>
+            <h4>To cook this, buy</h4>
+            <IngredientRows items={need} />
+          </>
+        ) : (
+          <p className="muted">You have everything for this one.</p>
+        )}
+        {have.length > 0 && (
+          <>
+            <h4>Already in your kitchen</h4>
+            <IngredientRows items={have} />
+          </>
+        )}
+        <h4>How to make it</h4>
+        <p className="recipe-steps">{recipe.instructions}</p>
+        <p className="meta">
+          Serves {recipe.servings}
+          {recipe.calories != null && ` · ${Math.round(recipe.calories)} kcal`}
+          {recipe.protein != null && ` · ${Math.round(recipe.protein)}g protein`}
+          {' per serving'}
+        </p>
+        <div className="recipe-actions">
+          {plannedEntryId ? (
             <>
-              <h4>To cook this, buy</h4>
-              <IngredientRows items={need} />
+              <span className="badge badge-success">Planned ✓</span>
+              <button type="button" className="btn btn-ghost" onClick={onUndo} disabled={busy}>Undo</button>
             </>
           ) : (
-            <p className="muted">You have everything for this one.</p>
+            <button type="button" className="btn btn-primary" onClick={onPlan} disabled={busy}>
+              {busy ? 'Planning…' : 'Plan this week'}
+            </button>
           )}
-          {have.length > 0 && (
-            <>
-              <h4>Already in your kitchen</h4>
-              <IngredientRows items={have} />
-            </>
-          )}
-          <h4>How to make it</h4>
-          <p className="recipe-steps">{recipe.instructions}</p>
-          <p className="meta">
-            Serves {recipe.servings}
-            {recipe.calories != null && ` · ${Math.round(recipe.calories)} kcal`}
-            {recipe.protein != null && ` · ${Math.round(recipe.protein)}g protein`}
-            {' per serving'}
-          </p>
-          <div className="recipe-actions">
-            {plannedEntryId ? (
-              <>
-                <span className="badge badge-success">Planned ✓</span>
-                <button type="button" className="btn btn-ghost" onClick={onUndo} disabled={busy}>Undo</button>
-              </>
-            ) : (
-              <button type="button" className="btn btn-primary" onClick={onPlan} disabled={busy}>
-                {busy ? 'Planning…' : 'Plan this week'}
-              </button>
-            )}
-          </div>
         </div>
-      )}
-    </article>
+      </div>
+    </div>
   )
 }
 
@@ -100,7 +118,7 @@ export default function RecipeSearchPage() {
   const [searching, setSearching] = useState(false)
   const [suggesting, setSuggesting] = useState(false)
   const [searchHit, setSearchHit] = useState(null)
-  const [expandedId, setExpandedId] = useState(null)
+  const [openId, setOpenId] = useState(null)
   const [planned, setPlanned] = useState({})
   const [planningId, setPlanningId] = useState(null)
   // React StrictMode runs effects twice in dev; without this guard an empty library gets six suggestions.
@@ -143,7 +161,7 @@ export default function RecipeSearchPage() {
     try {
       const hit = await searchRecipeRanked({ householdId: HOUSEHOLD_ID, query: text })
       setSearchHit(hit)
-      setExpandedId(hit.id)
+      setOpenId(hit.id)
       setQuery('')
     } catch (err) {
       setActionError({ message: err.message, retry: () => runSearch(text) })
@@ -193,27 +211,13 @@ export default function RecipeSearchPage() {
     }
   }
 
-  function card(recipe) {
-    return (
-      <RecipeCard
-        key={recipe.id}
-        recipe={recipe}
-        open={expandedId === recipe.id}
-        onToggle={() => setExpandedId(expandedId === recipe.id ? null : recipe.id)}
-        plannedEntryId={planned[recipe.id]}
-        busy={planningId === recipe.id}
-        onPlan={() => planThisWeek(recipe)}
-        onUndo={() => undoPlan(recipe)}
-      />
-    )
-  }
-
   const list = (recipes ?? []).filter((recipe) => recipe.id !== searchHit?.id)
+  const openRecipe = [searchHit, ...(recipes ?? [])].find((recipe) => recipe && recipe.id === openId) ?? null
 
   return (
     <div>
       <h2>Recipe Search</h2>
-      <form className="input-row" onSubmit={handleSearch}>
+      <form className="input-row search-row" onSubmit={handleSearch}>
         <input
           placeholder="What do you want to eat?"
           value={query}
@@ -241,7 +245,9 @@ export default function RecipeSearchPage() {
       {searchHit && (
         <>
           <p className="from-search">From your search</p>
-          <div className="recipe-list">{card(searchHit)}</div>
+          <div className="recipe-list">
+            <RecipeCard recipe={searchHit} onOpen={() => setOpenId(searchHit.id)} />
+          </div>
         </>
       )}
 
@@ -255,6 +261,7 @@ export default function RecipeSearchPage() {
         <div className="recipe-list" aria-label="Loading">
           <div className="card recipe-skeleton"><span className="skeleton" /><span className="skeleton" /></div>
           <div className="card recipe-skeleton"><span className="skeleton" /><span className="skeleton" /></div>
+          <div className="card recipe-skeleton"><span className="skeleton" /><span className="skeleton" /></div>
         </div>
       )}
       {recipes && list.length === 0 && (
@@ -262,7 +269,24 @@ export default function RecipeSearchPage() {
           {suggesting ? 'Thinking about what you can make…' : "No recipes yet. Tap Get ideas and we'll suggest some from your inventory."}
         </p>
       )}
-      {list.length > 0 && <div className="recipe-list">{list.map(card)}</div>}
+      {list.length > 0 && (
+        <div className="recipe-list">
+          {list.map((recipe) => (
+            <RecipeCard key={recipe.id} recipe={recipe} onOpen={() => setOpenId(recipe.id)} />
+          ))}
+        </div>
+      )}
+
+      {openRecipe && (
+        <RecipeSheet
+          recipe={openRecipe}
+          plannedEntryId={planned[openRecipe.id]}
+          busy={planningId === openRecipe.id}
+          onPlan={() => planThisWeek(openRecipe)}
+          onUndo={() => undoPlan(openRecipe)}
+          onClose={() => setOpenId(null)}
+        />
+      )}
     </div>
   )
 }
