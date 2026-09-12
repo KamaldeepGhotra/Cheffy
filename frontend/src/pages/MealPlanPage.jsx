@@ -1,32 +1,98 @@
 import { useEffect, useState } from 'react'
-import { addMealPlanEntry, deleteMealPlanEntry, generateGroceryList, getMealPlan, listRecipes } from '../api.js'
+import {
+  addMealPlanEntry,
+  deleteMealPlanEntry,
+  generateGroceryList,
+  getMealPlan,
+  listRecipes,
+  updateMealPlanEntry,
+} from '../api.js'
 import { DAY_NAMES, dayOfWeek, formatDay, shiftWeeks, startOfWeek, toISODate } from '../week.js'
 import { MEMBERS, getMe } from '../me.js'
 import './plan.css'
 
 const HOUSEHOLD_ID = 'roommates'
 
+function nextMember(current) {
+  return MEMBERS[(MEMBERS.indexOf(current) + 1) % MEMBERS.length]
+}
+
+function servingsLabel(count) {
+  return `${count} ${count === 1 ? 'serving' : 'servings'}`
+}
+
 export default function MealPlanPage() {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
-  const [entries, setEntries] = useState([])
+  const [entries, setEntries] = useState(null)
+  const [loadError, setLoadError] = useState(null)
+  const [actionError, setActionError] = useState(null)
   const [recipes, setRecipes] = useState([])
   const [adding, setAdding] = useState(null)
+  const [selectedId, setSelectedId] = useState(null)
+  const [busyId, setBusyId] = useState(null)
   const [grocery, setGrocery] = useState(null)
 
   const weekKey = toISODate(weekStart)
+  const planned = (entries ?? []).filter((e) => e.day == null)
+  const selected = planned.find((e) => e.id === selectedId) ?? null
 
   async function refresh() {
-    setEntries(await getMealPlan(HOUSEHOLD_ID, weekKey))
+    setLoadError(null)
+    try {
+      setEntries(await getMealPlan(HOUSEHOLD_ID, weekKey))
+    } catch (err) {
+      setLoadError(err.message)
+    }
   }
 
   useEffect(() => {
-    listRecipes(HOUSEHOLD_ID).then(setRecipes)
+    listRecipes(HOUSEHOLD_ID).then(setRecipes).catch(() => setRecipes([]))
   }, [])
 
   useEffect(() => {
+    setEntries(null)
     setGrocery(null)
+    setSelectedId(null)
+    setAdding(null)
     refresh()
   }, [weekKey])
+
+  // Show the change at once and put the old entry back if the server refuses it.
+  async function patch(entry, fields) {
+    setActionError(null)
+    setBusyId(entry.id)
+    setEntries((prev) => prev.map((e) => (e.id === entry.id ? { ...e, ...fields } : e)))
+    try {
+      const updated = await updateMealPlanEntry(entry.id, fields)
+      setEntries((prev) => prev.map((e) => (e.id === updated.id ? updated : e)))
+    } catch (err) {
+      setEntries((prev) => prev.map((e) => (e.id === entry.id ? entry : e)))
+      setActionError(err.message)
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  function schedule(day) {
+    if (!selected) return
+    const entry = selected
+    setSelectedId(null)
+    patch(entry, { day, assigned_to: entry.assigned_to ?? getMe() ?? MEMBERS[0] })
+  }
+
+  async function remove(entry) {
+    setActionError(null)
+    setBusyId(entry.id)
+    try {
+      await deleteMealPlanEntry(entry.id)
+      setEntries((prev) => prev.filter((e) => e.id !== entry.id))
+      if (selectedId === entry.id) setSelectedId(null)
+    } catch (err) {
+      setActionError(err.message)
+    } finally {
+      setBusyId(null)
+    }
+  }
 
   function startAdding(day) {
     setAdding({ day, recipeId: recipes[0]?.id ?? '', assignedTo: getMe() ?? MEMBERS[0], servings: 1 })
@@ -35,31 +101,36 @@ export default function MealPlanPage() {
   async function submitAdd(e) {
     e.preventDefault()
     if (!adding?.recipeId) return
-    await addMealPlanEntry({
-      householdId: HOUSEHOLD_ID,
-      weekStart: weekKey,
-      day: adding.day,
-      recipeId: Number(adding.recipeId),
-      servings: Number(adding.servings),
-      assignedTo: adding.assignedTo,
-    })
-    setAdding(null)
-    refresh()
-  }
-
-  async function remove(entryId) {
-    await deleteMealPlanEntry(entryId)
-    refresh()
+    setActionError(null)
+    try {
+      const created = await addMealPlanEntry({
+        householdId: HOUSEHOLD_ID,
+        weekStart: weekKey,
+        day: adding.day,
+        recipeId: Number(adding.recipeId),
+        servings: Number(adding.servings),
+        assignedTo: adding.assignedTo,
+      })
+      setEntries((prev) => [...(prev ?? []), created])
+      setAdding(null)
+    } catch (err) {
+      setActionError(err.message)
+    }
   }
 
   async function groceryForWeek() {
     const servings = {}
-    for (const entry of entries) {
+    for (const entry of entries ?? []) {
       servings[entry.recipe_id] = (servings[entry.recipe_id] ?? 0) + entry.servings
     }
     const recipeIds = Object.keys(servings).map(Number)
     if (recipeIds.length === 0) return
-    setGrocery(await generateGroceryList({ householdId: HOUSEHOLD_ID, recipeIds, servings }))
+    setActionError(null)
+    try {
+      setGrocery(await generateGroceryList({ householdId: HOUSEHOLD_ID, recipeIds, servings }))
+    } catch (err) {
+      setActionError(err.message)
+    }
   }
 
   return (
@@ -70,25 +141,89 @@ export default function MealPlanPage() {
         <button type="button" className="btn btn-ghost" onClick={() => setWeekStart(shiftWeeks(weekStart, 1))} aria-label="Next week">›</button>
       </div>
 
-      {recipes.length === 0 && <p className="empty">No recipes saved yet. Search for one on the Recipes tab first.</p>}
+      {loadError && (
+        <div className="banner-error">
+          <span>{loadError}</span>
+          <button type="button" className="btn" onClick={refresh}>Retry</button>
+        </div>
+      )}
+      {actionError && (
+        <div className="banner-error">
+          <span>{actionError}</span>
+        </div>
+      )}
+
+      <section className="tray">
+        <h3>Planned, no day yet</h3>
+        {entries === null && !loadError && (
+          <div className="loading" aria-label="Loading">
+            <span className="skeleton" />
+            <span className="skeleton" />
+          </div>
+        )}
+        {entries && planned.length === 0 && (
+          <p className="empty">
+            {recipes.length === 0
+              ? 'No recipes yet. Search for one on the Recipes tab first.'
+              : 'Nothing planned yet. Pick some on the Recipes tab.'}
+          </p>
+        )}
+        {planned.length > 0 && (
+          <div className="tray-cards">
+            {planned.map((entry) => (
+              <button
+                key={entry.id}
+                type="button"
+                className={`tray-card${entry.id === selectedId ? ' selected' : ''}`}
+                aria-pressed={entry.id === selectedId}
+                disabled={busyId === entry.id}
+                onClick={() => setSelectedId(entry.id === selectedId ? null : entry.id)}
+              >
+                <span className="tray-name">{entry.recipe_name}</span>
+                <span className="muted">
+                  {servingsLabel(entry.servings)}{entry.assigned_to ? ` · ${entry.assigned_to}` : ''}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+        {selected && <p className="hint muted">Tap a day below to schedule {selected.recipe_name}.</p>}
+      </section>
 
       {DAY_NAMES.map((name, day) => {
-        const dayEntries = entries.filter((e) => e.day === day)
+        const dayEntries = (entries ?? []).filter((e) => e.day === day)
         return (
           <section key={day} className="day">
             <header>
               <span>{name} <span className="muted">{formatDay(dayOfWeek(weekStart, day))}</span></span>
-              <button type="button" className="chip" onClick={() => startAdding(day)} disabled={recipes.length === 0}>+ add</button>
+              {selected ? (
+                <button type="button" className="btn btn-primary" onClick={() => schedule(day)}>Schedule here</button>
+              ) : (
+                <button type="button" className="chip" onClick={() => startAdding(day)} disabled={recipes.length === 0 || entries === null}>+ add</button>
+              )}
             </header>
             {dayEntries.length > 0 && (
               <ul>
                 {dayEntries.map((entry) => (
-                  <li key={entry.id} className="row">
-                    <span>
-                      {entry.recipe_name}
-                      <span className="muted"> · {entry.servings} {entry.servings === 1 ? 'serving' : 'servings'} · {entry.assigned_to}</span>
+                  <li key={entry.id} className="row entry">
+                    <span className="entry-name">{entry.recipe_name}</span>
+                    <span className="entry-controls">
+                      <button
+                        type="button"
+                        className="chip"
+                        onClick={() => patch(entry, { assigned_to: nextMember(entry.assigned_to) })}
+                        disabled={busyId === entry.id}
+                        aria-label={`Assigned to ${entry.assigned_to ?? 'nobody'}, tap to change`}
+                      >
+                        {entry.assigned_to ?? 'Anyone'}
+                      </button>
+                      <span className="stepper" aria-label="Servings">
+                        <button type="button" onClick={() => patch(entry, { servings: entry.servings - 1 })} disabled={busyId === entry.id || entry.servings <= 1} aria-label="One serving less">−</button>
+                        <span>{entry.servings}</span>
+                        <button type="button" onClick={() => patch(entry, { servings: entry.servings + 1 })} disabled={busyId === entry.id} aria-label="One serving more">+</button>
+                      </span>
+                      <button type="button" className="btn btn-ghost" onClick={() => remove(entry)} disabled={busyId === entry.id} aria-label={`Remove ${entry.recipe_name}`}>×</button>
                     </span>
-                    <button type="button" className="btn btn-ghost" onClick={() => remove(entry.id)} aria-label={`Remove ${entry.recipe_name}`}>×</button>
                   </li>
                 ))}
               </ul>
@@ -111,7 +246,7 @@ export default function MealPlanPage() {
       })}
 
       <div className="week-actions">
-        <button type="button" className="btn btn-primary" onClick={groceryForWeek} disabled={entries.length === 0}>
+        <button type="button" className="btn btn-secondary" onClick={groceryForWeek} disabled={!entries || entries.length === 0}>
           Grocery list for this week
         </button>
       </div>
