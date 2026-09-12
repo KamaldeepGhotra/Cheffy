@@ -3,6 +3,8 @@ from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 from app.db import Base
 
+DEFAULT_RECIPE_SERVINGS = 4
+
 
 class Ingredient(Base):
     __tablename__ = "ingredients"
@@ -31,6 +33,7 @@ class Recipe(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
+    servings = Column(Integer, nullable=False, default=DEFAULT_RECIPE_SERVINGS)
     instructions = Column(String, nullable=False)
     calories = Column(Float, nullable=True)
     protein = Column(Float, nullable=True)

@@ -30,6 +30,7 @@ class InventoryItemOut(BaseModel):
 
 class RecipeSearchRequest(BaseModel):
     query: str
+    household_id: str | None = None
 
 
 class RecipeIngredientOut(BaseModel):
@@ -42,12 +43,23 @@ class RecipeIngredientOut(BaseModel):
 class RecipeOut(BaseModel):
     id: int
     name: str
+    servings: int
     instructions: str
     calories: float | None
     protein: float | None
     fat: float | None
     carbs: float | None
     ingredients: list[RecipeIngredientOut]
+
+
+class RankedRecipeOut(RecipeOut):
+    match_percentage: float
+    missing_ingredients: list[str]
+
+
+class RecipeSuggestRequest(BaseModel):
+    household_id: str
+    count: int = Field(default=3, ge=1, le=6)
 
 
 class GroceryListRequest(BaseModel):
