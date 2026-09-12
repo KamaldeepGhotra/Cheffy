@@ -298,3 +298,8 @@ button.chip:active { transform: scale(0.97); }
   text-align: center;
   color: var(--text-muted);
 }
+
+/* Who-are-you gate and the identity chip in the header */
+.gate { display: grid; gap: var(--space-3); }
+.gate .btn { min-height: 56px; font-size: var(--text-lg); }
+.app-header .me { flex: 0 0 auto; margin-left: auto; min-height: 36px; }

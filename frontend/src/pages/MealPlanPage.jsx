@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { addMealPlanEntry, deleteMealPlanEntry, generateGroceryList, getMealPlan, listRecipes } from '../api.js'
 import { DAY_NAMES, dayOfWeek, formatDay, shiftWeeks, startOfWeek, toISODate } from '../week.js'
+import { MEMBERS, getMe } from '../me.js'
 import './plan.css'
 
 const HOUSEHOLD_ID = 'roommates'
-const MEMBERS = ['Andreas', 'Kam']
 
 export default function MealPlanPage() {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
@@ -29,7 +29,7 @@ export default function MealPlanPage() {
   }, [weekKey])
 
   function startAdding(day) {
-    setAdding({ day, recipeId: recipes[0]?.id ?? '', assignedTo: MEMBERS[0], servings: 1 })
+    setAdding({ day, recipeId: recipes[0]?.id ?? '', assignedTo: getMe() ?? MEMBERS[0], servings: 1 })
   }
 
   async function submitAdd(e) {
