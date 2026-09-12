@@ -84,3 +84,12 @@ export async function deleteMealPlanEntry(entryId) {
 export async function updateMealPlanEntry(entryId, fields) {
   return request(`/meal-plan/${entryId}`, { method: 'PATCH', body: fields })
 }
+
+// Search saves the recipe and returns it ranked against the household's inventory.
+export async function searchRecipeRanked({ householdId, query }) {
+  return request('/recipes/search', { method: 'POST', body: { query, household_id: householdId } })
+}
+
+export async function suggestRecipes({ householdId, count = 3 }) {
+  return request('/recipes/suggest', { method: 'POST', body: { household_id: householdId, count } })
+}

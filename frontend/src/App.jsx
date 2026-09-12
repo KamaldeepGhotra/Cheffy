@@ -71,7 +71,7 @@ export default function App() {
           {`I'm ${me}`}
         </button>
       </header>
-      <main className="page">
+      <main className={`page${tab === 'recipes' ? ' page-wide' : ''}`}>
         <ActivePage />
       </main>
     </div>
