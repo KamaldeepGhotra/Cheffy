@@ -3,6 +3,7 @@ import InventoryPage from './pages/InventoryPage.jsx'
 import RecipeSearchPage from './pages/RecipeSearchPage.jsx'
 import GroceryListPage from './pages/GroceryListPage.jsx'
 import MealPlanPage from './pages/MealPlanPage.jsx'
+import { MEMBERS, getMe, setMe } from './me.js'
 
 const TABS = {
   recipes: RecipeSearchPage,
@@ -14,7 +15,35 @@ const TAB_KEYS = Object.keys(TABS)
 
 export default function App() {
   const [tab, setTab] = useState('recipes')
+  const [me, setMeState] = useState(getMe)
   const ActivePage = TABS[tab]
+
+  function pick(name) {
+    setMe(name)
+    setMeState(name)
+  }
+
+  if (!me) {
+    return (
+      <div className="app">
+        <header className="bar app-header">
+          <h1>Cheffy</h1>
+        </header>
+        <main className="page">
+          <h2>Who are you?</h2>
+          <div className="gate">
+            {MEMBERS.map((name) => (
+              <button key={name} type="button" className="btn" onClick={() => pick(name)}>
+                {name}
+              </button>
+            ))}
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  const other = MEMBERS[(MEMBERS.indexOf(me) + 1) % MEMBERS.length]
 
   return (
     <div className="app">
@@ -38,6 +67,9 @@ export default function App() {
             </button>
           ))}
         </nav>
+        <button type="button" className="chip me" onClick={() => pick(other)} aria-label={`Switch to ${other}`}>
+          {`I'm ${me}`}
+        </button>
       </header>
       <main className="page">
         <ActivePage />
