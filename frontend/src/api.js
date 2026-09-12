@@ -37,10 +37,6 @@ export async function searchIngredients(query) {
   return request(`/ingredients/search?${params}`)
 }
 
-export async function searchRecipe(query) {
-  return request('/recipes/search', { method: 'POST', body: { query } })
-}
-
 export async function generateGroceryList({ householdId, recipeIds, servings }) {
   return request('/grocery-list', {
     method: 'POST',
@@ -85,9 +81,17 @@ export async function updateMealPlanEntry(entryId, fields) {
   return request(`/meal-plan/${entryId}`, { method: 'PATCH', body: fields })
 }
 
-// Search saves the recipe and returns it ranked against the household's inventory.
-export async function searchRecipeRanked({ householdId, query }) {
-  return request('/recipes/search', { method: 'POST', body: { query, household_id: householdId } })
+// Returns several candidates scored against the household's inventory. Saves nothing —
+// the caller passes the one the user picks to saveRecipe.
+export async function searchRecipeCandidates({ householdId, query, count = 3 }) {
+  return request('/recipes/search', {
+    method: 'POST',
+    body: { query, household_id: householdId, count },
+  })
+}
+
+export async function saveRecipe({ householdId, candidate }) {
+  return request('/recipes', { method: 'POST', body: { candidate, household_id: householdId } })
 }
 
 export async function suggestRecipes({ householdId, count = 3 }) {

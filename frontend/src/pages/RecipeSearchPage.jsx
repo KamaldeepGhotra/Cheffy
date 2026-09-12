@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { addMealPlanEntry, deleteMealPlanEntry, listRecipes, searchRecipeRanked, suggestRecipes } from '../api.js'
+import { addMealPlanEntry, deleteMealPlanEntry, listRecipes, saveRecipe, searchRecipeCandidates, suggestRecipes } from '../api.js'
 import { startOfWeek, toISODate } from '../week.js'
 import './recipes.css'
 
@@ -45,6 +45,23 @@ function RecipeCard({ recipe, onOpen }) {
       <span className="recipe-title">{recipe.name}</span>
       <span className="recipe-missing">{missingLine(recipe.missing_ingredients)}</span>
     </button>
+  )
+}
+
+// A search result that isn't saved yet, so it gets "Use this one" rather than opening a sheet.
+function CandidateCard({ candidate, busy, disabled, onUse }) {
+  return (
+    <div className="card recipe-card candidate-card">
+      <span className={badgeClass(candidate.match_percentage)}>{Math.round(candidate.match_percentage)}%</span>
+      <span className="recipe-title">{candidate.name}</span>
+      <span className="recipe-missing">{missingLine(candidate.missing_ingredients)}</span>
+      <span className="muted candidate-meta">
+        Serves {candidate.servings} · {candidate.ingredients.length} ingredients
+      </span>
+      <button type="button" className="btn btn-primary" onClick={onUse} disabled={disabled}>
+        {busy ? 'Adding…' : 'Use this one'}
+      </button>
+    </div>
   )
 }
 
@@ -117,7 +134,8 @@ export default function RecipeSearchPage() {
   const [query, setQuery] = useState('')
   const [searching, setSearching] = useState(false)
   const [suggesting, setSuggesting] = useState(false)
-  const [searchHit, setSearchHit] = useState(null)
+  const [candidates, setCandidates] = useState([])
+  const [savingIndex, setSavingIndex] = useState(null)
   const [openId, setOpenId] = useState(null)
   const [planned, setPlanned] = useState({})
   const [planningId, setPlanningId] = useState(null)
@@ -159,14 +177,29 @@ export default function RecipeSearchPage() {
     setActionError(null)
     setSearching(true)
     try {
-      const hit = await searchRecipeRanked({ householdId: HOUSEHOLD_ID, query: text })
-      setSearchHit(hit)
-      setOpenId(hit.id)
+      const results = await searchRecipeCandidates({ householdId: HOUSEHOLD_ID, query: text })
+      setCandidates(results)
       setQuery('')
     } catch (err) {
       setActionError({ message: err.message, retry: () => runSearch(text) })
     } finally {
       setSearching(false)
+    }
+  }
+
+  // Candidates aren't in the library yet, so picking one is what actually saves it.
+  async function useCandidate(candidate, index) {
+    setActionError(null)
+    setSavingIndex(index)
+    try {
+      const saved = await saveRecipe({ householdId: HOUSEHOLD_ID, candidate })
+      setRecipes((prev) => [saved, ...(prev ?? []).filter((r) => r.id !== saved.id)])
+      setCandidates([])
+      setOpenId(saved.id)
+    } catch (err) {
+      setActionError({ message: err.message, retry: () => useCandidate(candidate, index) })
+    } finally {
+      setSavingIndex(null)
     }
   }
 
@@ -211,8 +244,8 @@ export default function RecipeSearchPage() {
     }
   }
 
-  const list = (recipes ?? []).filter((recipe) => recipe.id !== searchHit?.id)
-  const openRecipe = [searchHit, ...(recipes ?? [])].find((recipe) => recipe && recipe.id === openId) ?? null
+  const list = recipes ?? []
+  const openRecipe = list.find((recipe) => recipe.id === openId) ?? null
 
   return (
     <div>
@@ -242,11 +275,22 @@ export default function RecipeSearchPage() {
         </div>
       )}
 
-      {searchHit && (
+      {candidates.length > 0 && (
         <>
-          <p className="from-search">From your search</p>
+          <div className="section-head">
+            <p className="from-search">Pick one to add to your recipes</p>
+            <button type="button" className="btn btn-ghost" onClick={() => setCandidates([])}>Dismiss</button>
+          </div>
           <div className="recipe-list">
-            <RecipeCard recipe={searchHit} onOpen={() => setOpenId(searchHit.id)} />
+            {candidates.map((candidate, index) => (
+              <CandidateCard
+                key={`${candidate.name}-${index}`}
+                candidate={candidate}
+                busy={savingIndex === index}
+                disabled={savingIndex !== null}
+                onUse={() => useCandidate(candidate, index)}
+              />
+            ))}
           </div>
         </>
       )}

@@ -63,3 +63,10 @@
 .sheet h4 { margin: var(--space-4) 0 var(--space-1); font-size: var(--text-sm); font-weight: 600; color: var(--text-muted); }
 .recipe-steps { white-space: pre-line; }
 .recipe-actions { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-4); }
+
+/* Search results, which aren't saved yet: same card shape, but a button instead of a tap target. */
+.candidate-card { cursor: default; border-color: var(--accent); }
+.candidate-card:hover { box-shadow: none; }
+.candidate-card:active { transform: none; }
+.candidate-meta { font-size: var(--text-sm); }
+.candidate-card .btn { margin-top: auto; align-self: stretch; }
