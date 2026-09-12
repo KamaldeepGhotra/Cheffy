@@ -4,6 +4,24 @@ import { startOfWeek, toISODate } from '../week.js'
 import './recipes.css'
 
 const HOUSEHOLD_ID = 'roommates'
+// Candidates aren't saved anywhere, so switching tabs would otherwise lose them and cost
+// another Gemini call to get back. sessionStorage keeps them until the browser tab closes.
+const CANDIDATES_KEY = 'cheffy.searchCandidates'
+
+function loadCandidates() {
+  try {
+    return JSON.parse(sessionStorage.getItem(CANDIDATES_KEY)) ?? []
+  } catch {
+    return []
+  }
+}
+
+function storeCandidates(candidates) {
+  try {
+    if (candidates.length === 0) sessionStorage.removeItem(CANDIDATES_KEY)
+    else sessionStorage.setItem(CANDIDATES_KEY, JSON.stringify(candidates))
+  } catch {}
+}
 
 function badgeClass(percentage) {
   if (percentage >= 80) return 'badge badge-success'
@@ -134,13 +152,19 @@ export default function RecipeSearchPage() {
   const [query, setQuery] = useState('')
   const [searching, setSearching] = useState(false)
   const [suggesting, setSuggesting] = useState(false)
-  const [candidates, setCandidates] = useState([])
+  const [candidates, setCandidatesState] = useState(loadCandidates)
   const [savingIndex, setSavingIndex] = useState(null)
   const [openId, setOpenId] = useState(null)
   const [planned, setPlanned] = useState({})
   const [planningId, setPlanningId] = useState(null)
   // React StrictMode runs effects twice in dev; without this guard an empty library gets six suggestions.
   const autoSuggested = useRef(false)
+
+  // One writer, so what's on screen and what's in storage can't drift apart.
+  function setCandidates(next) {
+    storeCandidates(next)
+    setCandidatesState(next)
+  }
 
   async function getIdeas() {
     setActionError(null)

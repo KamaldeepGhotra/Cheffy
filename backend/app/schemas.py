@@ -97,9 +97,11 @@ class GroceryListRequest(BaseModel):
 
 
 class GroceryLine(BaseModel):
+    ingredient_id: int
     ingredient_name: str
     needed: float
     unit: str
+    recipes: list[str] = []
 
 
 class GroceryListResponse(BaseModel):
