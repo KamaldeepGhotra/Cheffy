@@ -13,19 +13,21 @@ export default function RecipeSearchPage() {
   return (
     <div>
       <h2>Recipe Search</h2>
-      <input placeholder="What do you want to eat?" value={query} onChange={(e) => setQuery(e.target.value)} />
-      <button onClick={handleSearch}>Search</button>
+      <div className="input-row">
+        <input placeholder="What do you want to eat?" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <button type="button" className="btn btn-primary" onClick={handleSearch}>Search</button>
+      </div>
 
       {recipe && (
-        <div>
+        <div className="card">
           <h3>{recipe.name}</h3>
           <p>{recipe.instructions}</p>
-          <p>
+          <p className="muted">
             Calories: {recipe.calories} | Protein: {recipe.protein}g | Fat: {recipe.fat}g | Carbs: {recipe.carbs}g
           </p>
           <ul>
             {recipe.ingredients.map((ing) => (
-              <li key={ing.ingredient_id}>
+              <li key={ing.ingredient_id} className="row">
                 {ing.ingredient_name}: {ing.quantity} {ing.unit}
               </li>
             ))}

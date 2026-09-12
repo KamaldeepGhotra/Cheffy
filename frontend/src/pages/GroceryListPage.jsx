@@ -21,25 +21,27 @@ export default function GroceryListPage() {
   return (
     <div>
       <h2>Grocery List</h2>
-      <input
-        placeholder="Recipe IDs, comma separated"
-        value={recipeIdsInput}
-        onChange={(e) => setRecipeIdsInput(e.target.value)}
-      />
-      <button onClick={handleGenerate}>Generate</button>
+      <div className="input-row">
+        <input
+          placeholder="Recipe IDs, comma separated"
+          value={recipeIdsInput}
+          onChange={(e) => setRecipeIdsInput(e.target.value)}
+        />
+        <button type="button" className="btn btn-primary" onClick={handleGenerate}>Generate</button>
+      </div>
 
       {result && (
         <div>
           <h3>Already have</h3>
           <ul>
             {result.have.map((line, i) => (
-              <li key={i}>{line.ingredient_name}: {line.needed} {line.unit}</li>
+              <li key={i} className="row">{line.ingredient_name}: {line.needed} {line.unit}</li>
             ))}
           </ul>
           <h3>Need to buy</h3>
           <ul>
             {result.need.map((line, i) => (
-              <li key={i}>{line.ingredient_name}: {line.needed} {line.unit}</li>
+              <li key={i} className="row">{line.ingredient_name}: {line.needed} {line.unit}</li>
             ))}
           </ul>
         </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { addInventoryItem, deleteInventoryItem, listInventory, searchIngredients } from '../api.js'
 import { parseInventoryInput } from '../parseInventoryInput.js'
+import './inventory.css'
 
 const HOUSEHOLD_ID = 'roommates'
 const RECENTS_KEY = 'cheffy.recentAdds'
@@ -83,14 +84,14 @@ export default function InventoryPage() {
   return (
     <div>
       <h2>Inventory</h2>
-      <form className="smart-add" onSubmit={handleSubmit}>
+      <form className="input-row" onSubmit={handleSubmit}>
         <input
           autoFocus
           placeholder='e.g. "2 lb chicken breast" or "eggs"'
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
-        <button className="primary" type="submit" disabled={!parsed}>Add</button>
+        <button className="btn btn-primary" type="submit" disabled={!parsed}>Add</button>
       </form>
       <p className="preview">
         {parsed && (
@@ -123,9 +124,9 @@ export default function InventoryPage() {
       <h3>On hand</h3>
       <ul>
         {items.map((item) => (
-          <li key={item.id}>
+          <li key={item.id} className="row">
             <span>{item.ingredient_name} <span className="muted">{formatQuantity(item.quantity)} {item.unit}</span></span>
-            <button type="button" className="remove" onClick={() => remove(item.id)} aria-label={`Remove ${item.ingredient_name}`}>×</button>
+            <button type="button" className="btn btn-ghost" onClick={() => remove(item.id)} aria-label={`Remove ${item.ingredient_name}`}>×</button>
           </li>
         ))}
       </ul>

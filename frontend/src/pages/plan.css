@@ -1,0 +1,8 @@
+.week-nav { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-4); }
+.week-nav h2 { flex: 1; margin: 0; text-align: center; }
+.day { margin-top: var(--space-3); }
+.day header { display: flex; justify-content: space-between; align-items: center; min-height: var(--tap); font-weight: 600; }
+.add-entry { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+.add-entry select { flex: 1 1 10rem; min-width: 0; }
+.add-entry input[type="number"] { width: 5rem; }
+.week-actions { margin-top: var(--space-5); }
