@@ -110,3 +110,83 @@ def test_delete_entry(db_session):
     assert client.get("/meal-plan", params={"household_id": "roommates", "week_start": "2026-09-14"}).json() == []
 
     app.dependency_overrides.clear()
+
+
+def test_planned_entry_has_no_day_until_scheduled(db_session):
+    recipe = seed_recipe(db_session)
+    client = make_client(db_session)
+
+    created = client.post("/meal-plan", json={
+        "household_id": "roommates", "week_start": "2026-09-14", "recipe_id": recipe.id,
+    })
+    assert created.status_code == 201
+    body = created.json()
+    assert body["day"] is None
+    assert body["assigned_to"] is None
+    assert body["servings"] == 1
+
+    scheduled = client.patch(f"/meal-plan/{body['id']}", json={"day": 2, "assigned_to": "Andreas"})
+    assert scheduled.status_code == 200
+    assert scheduled.json()["day"] == 2
+    assert scheduled.json()["assigned_to"] == "Andreas"
+    assert scheduled.json()["servings"] == 1
+
+    listed = client.get("/meal-plan", params={"household_id": "roommates", "week_start": "2026-09-14"}).json()
+    assert [e["day"] for e in listed] == [2]
+
+    app.dependency_overrides.clear()
+
+
+def test_patch_day_null_returns_entry_to_planned_and_absent_fields_stay(db_session):
+    recipe = seed_recipe(db_session)
+    client = make_client(db_session)
+
+    entry_id = client.post("/meal-plan", json={
+        "household_id": "roommates", "week_start": "2026-09-14", "day": 3,
+        "recipe_id": recipe.id, "servings": 2, "assigned_to": "Kam",
+    }).json()["id"]
+
+    unscheduled = client.patch(f"/meal-plan/{entry_id}", json={"day": None})
+    assert unscheduled.status_code == 200
+    assert unscheduled.json()["day"] is None
+    assert unscheduled.json()["assigned_to"] == "Kam"
+
+    bumped = client.patch(f"/meal-plan/{entry_id}", json={"servings": 3})
+    assert bumped.json()["servings"] == 3
+    assert bumped.json()["day"] is None
+    assert bumped.json()["assigned_to"] == "Kam"
+
+    app.dependency_overrides.clear()
+
+
+def test_planned_entries_come_first_then_by_day(db_session):
+    recipe = seed_recipe(db_session)
+    client = make_client(db_session)
+
+    ids = {}
+    for label, day in [("sat", 5), ("planned-a", None), ("mon", 0), ("planned-b", None)]:
+        ids[label] = client.post("/meal-plan", json={
+            "household_id": "roommates", "week_start": "2026-09-14", "day": day, "recipe_id": recipe.id,
+        }).json()["id"]
+
+    body = client.get("/meal-plan", params={"household_id": "roommates", "week_start": "2026-09-14"}).json()
+    assert [e["id"] for e in body] == [ids["planned-a"], ids["planned-b"], ids["mon"], ids["sat"]]
+
+    app.dependency_overrides.clear()
+
+
+def test_patch_rejects_empty_body_bad_values_and_unknown_id(db_session):
+    recipe = seed_recipe(db_session)
+    client = make_client(db_session)
+
+    entry_id = client.post("/meal-plan", json={
+        "household_id": "roommates", "week_start": "2026-09-14", "recipe_id": recipe.id,
+    }).json()["id"]
+
+    assert client.patch(f"/meal-plan/{entry_id}", json={}).status_code == 422
+    assert client.patch(f"/meal-plan/{entry_id}", json={"servings": None}).status_code == 422
+    assert client.patch(f"/meal-plan/{entry_id}", json={"servings": 0}).status_code == 422
+    assert client.patch(f"/meal-plan/{entry_id}", json={"day": 7}).status_code == 422
+    assert client.patch("/meal-plan/999", json={"servings": 2}).status_code == 404
+
+    app.dependency_overrides.clear()

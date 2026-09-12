@@ -60,9 +60,9 @@ class MealPlanEntry(Base):
     id = Column(Integer, primary_key=True, index=True)
     household_id = Column(String, nullable=False, index=True)
     week_start = Column(Date, nullable=False, index=True)
-    day = Column(Integer, nullable=False)
+    day = Column(Integer, nullable=True)
     recipe_id = Column(Integer, ForeignKey("recipes.id"), nullable=False)
     servings = Column(Integer, nullable=False, default=1)
-    assigned_to = Column(String, nullable=False)
+    assigned_to = Column(String, nullable=True)
 
     recipe = relationship("Recipe")

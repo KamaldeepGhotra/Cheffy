@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from datetime import date, datetime
 
 
@@ -70,17 +70,29 @@ class GroceryListResponse(BaseModel):
 class MealPlanEntryCreate(BaseModel):
     household_id: str
     week_start: date
-    day: int = Field(ge=0, le=6)
+    day: int | None = Field(default=None, ge=0, le=6)
     recipe_id: int
     servings: int = Field(default=1, ge=1)
-    assigned_to: str
+    assigned_to: str | None = None
 
 
 class MealPlanEntryOut(BaseModel):
     id: int
     week_start: date
-    day: int
+    day: int | None
     recipe_id: int
     recipe_name: str
     servings: int
-    assigned_to: str
+    assigned_to: str | None
+
+
+class MealPlanEntryUpdate(BaseModel):
+    day: int | None = Field(default=None, ge=0, le=6)
+    servings: int = Field(default=None, ge=1)
+    assigned_to: str | None = None
+
+    @model_validator(mode="after")
+    def require_a_field(self):
+        if not self.model_fields_set:
+            raise ValueError("Send at least one of day, servings or assigned_to")
+        return self
