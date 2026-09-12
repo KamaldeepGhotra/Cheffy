@@ -56,3 +56,16 @@ export function parseInventoryInput(text) {
 
   return { quantity, unit, name, unitRecognized }
 }
+
+// "2 lb chicken, 12 eggs, cilantro" -> { items: [three parsed items, each with its raw segment], invalid: [] }
+// Segments that parse to nothing come back in `invalid` so the page can say which one it could not read.
+export function parseInventoryItems(text) {
+  const items = []
+  const invalid = []
+  for (const raw of text.split(/[,\n]/).map((s) => s.trim()).filter(Boolean)) {
+    const item = parseInventoryInput(raw)
+    if (item) items.push({ ...item, raw })
+    else invalid.push(raw)
+  }
+  return { items, invalid }
+}

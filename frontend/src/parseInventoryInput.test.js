@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseInventoryInput } from './parseInventoryInput.js'
+import { parseInventoryInput, parseInventoryItems } from './parseInventoryInput.js'
 
 describe('parseInventoryInput', () => {
   it('parses quantity, unit, and multi-word name', () => {
@@ -62,5 +62,37 @@ describe('parseInventoryInput', () => {
     expect(parseInventoryInput('   ')).toBeNull()
     expect(parseInventoryInput('2 lb')).toBeNull()
     expect(parseInventoryInput('0 lb chicken')).toBeNull()
+  })
+})
+
+describe('parseInventoryItems', () => {
+  it('splits comma separated items and keeps each raw segment', () => {
+    const { items, invalid } = parseInventoryItems('2 lb chicken, 12 eggs, cilantro')
+    expect(items.map((i) => [i.name, i.quantity, i.unit])).toEqual([
+      ['chicken', 2, 'lb'], ['eggs', 12, 'each'], ['cilantro', 1, 'each'],
+    ])
+    expect(items.map((i) => i.raw)).toEqual(['2 lb chicken', '12 eggs', 'cilantro'])
+    expect(invalid).toEqual([])
+  })
+
+  it('still handles a single item', () => {
+    const { items } = parseInventoryItems('2 lb chicken breast')
+    expect(items).toHaveLength(1)
+    expect(items[0].name).toBe('chicken breast')
+  })
+
+  it('skips empty segments and accepts newlines as separators', () => {
+    const { items } = parseInventoryItems('eggs,, \n milk ,')
+    expect(items.map((i) => i.name)).toEqual(['eggs', 'milk'])
+  })
+
+  it('reports segments it cannot read instead of dropping them', () => {
+    const { items, invalid } = parseInventoryItems('2 lb chicken, 3 lb')
+    expect(items.map((i) => i.name)).toEqual(['chicken'])
+    expect(invalid).toEqual(['3 lb'])
+  })
+
+  it('returns nothing for blank input', () => {
+    expect(parseInventoryItems('   ')).toEqual({ items: [], invalid: [] })
   })
 })
