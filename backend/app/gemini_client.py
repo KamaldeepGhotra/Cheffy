@@ -38,11 +38,18 @@ def _shape_rules(units: str) -> str:
 - Nutrition values (calories, protein, fat, carbs) are per serving."""
 
 
-def _build_search_prompt(query: str) -> str:
+def _build_search_prompt(query: str, count: int) -> str:
     units = ", ".join(UNIT_VOCABULARY)
+    intro = (
+        f'You are a recipe assistant. Give {count} genuinely different recipes for "{query}" — '
+        "different enough that someone would have a reason to pick between them, not the same dish "
+        "with a substitution or two. Vary the cooking method, the flavour profile, or how much work "
+        "each one is, and open each recipe's instructions by saying in one short phrase what makes "
+        "that version distinct."
+    )
     return (
-        f'You are a recipe assistant. For the dish "{query}", respond with ONLY a JSON object '
-        f'(no markdown, no commentary) with this exact shape:\n{RECIPE_JSON_SHAPE}\n{_shape_rules(units)}'
+        f"{intro} Respond with ONLY a JSON array (no markdown, no commentary) where each element has "
+        f"this exact shape:\n{RECIPE_JSON_SHAPE}\n{_shape_rules(units)}"
     )
 
 
@@ -97,19 +104,18 @@ def _parse_json(text: str):
         raise GeminiError(f"Gemini response was not valid JSON: {exc}") from exc
 
 
-def get_recipe_info(query: str) -> dict:
-    text = _call_gemini(_build_search_prompt(query))
+def _parse_recipe_list(text: str) -> list[dict]:
     data = _parse_json(text)
-    _validate_recipe_shape(data)
-    return data
-
-
-def suggest_recipes(ingredient_names: list[str], count: int = 3) -> list[dict]:
-    text = _call_gemini(_build_suggest_prompt(ingredient_names, count))
-    data = _parse_json(text)
-
     if not isinstance(data, list):
         raise GeminiError(f"Expected a JSON array of recipes, got {type(data).__name__}")
     for recipe in data:
         _validate_recipe_shape(recipe)
     return data
+
+
+def search_recipes(query: str, count: int = 3) -> list[dict]:
+    return _parse_recipe_list(_call_gemini(_build_search_prompt(query, count)))
+
+
+def suggest_recipes(ingredient_names: list[str], count: int = 3) -> list[dict]:
+    return _parse_recipe_list(_call_gemini(_build_suggest_prompt(ingredient_names, count)))

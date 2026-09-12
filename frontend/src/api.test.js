@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { addInventoryItem, deleteInventoryItem, listInventory, searchRecipe, updateMealPlanEntry } from './api.js'
+import { addInventoryItem, deleteInventoryItem, listInventory, searchRecipeCandidates, updateMealPlanEntry } from './api.js'
 
 function respond(status, body, statusText = '') {
   return {
@@ -61,7 +61,7 @@ describe('request helper', () => {
   it("throws the server's detail message on a non-2xx response", async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respond(502, { detail: 'Recipe service unavailable, try again' }, 'Bad Gateway')))
 
-    await expect(searchRecipe('pad thai')).rejects.toThrow('Recipe service unavailable, try again')
+    await expect(searchRecipeCandidates({ householdId: 'roommates', query: 'pad thai' })).rejects.toThrow('Recipe service unavailable, try again')
   })
 
   it('falls back to the status text when the error body is not JSON', async () => {
@@ -80,7 +80,7 @@ describe('request helper', () => {
     const validationError = { detail: [{ loc: ['body', 'servings'], msg: 'field required' }] }
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respond(422, validationError, 'Unprocessable Entity')))
 
-    await expect(searchRecipe('')).rejects.toThrow('Unprocessable Entity')
+    await expect(searchRecipeCandidates({ householdId: 'roommates', query: '' })).rejects.toThrow('Unprocessable Entity')
   })
 
   it('sends only the given meal plan fields on PATCH, keeping an explicit null', async () => {

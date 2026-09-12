@@ -1,7 +1,7 @@
 import json
 import pytest
 from unittest.mock import patch, MagicMock
-from app.gemini_client import get_recipe_info, suggest_recipes, GeminiError
+from app.gemini_client import search_recipes, suggest_recipes, GeminiError
 
 
 FAKE_RECIPE = {
@@ -27,45 +27,57 @@ def _mock_model(mock_model_cls, response_text):
 
 
 @patch("app.gemini_client.genai.GenerativeModel")
-def test_get_recipe_info_parses_structured_response(mock_model_cls):
-    _mock_model(mock_model_cls, json.dumps(FAKE_RECIPE))
+def test_search_recipes_parses_structured_response(mock_model_cls):
+    second = {**FAKE_RECIPE, "name": "Thai Fried Rice"}
+    mock_model = _mock_model(mock_model_cls, json.dumps([FAKE_RECIPE, second]))
 
-    result = get_recipe_info("chicken fried rice")
+    result = search_recipes("chicken fried rice", count=2)
 
-    assert result["name"] == "Chicken Fried Rice"
-    assert result["servings"] == 4
-    assert result["calories"] == 450
-    assert len(result["ingredients"]) == 2
-    assert result["ingredients"][0]["name"] == "chicken breast"
-    assert result["ingredients"][0]["prep"] == "diced"
+    assert [r["name"] for r in result] == ["Chicken Fried Rice", "Thai Fried Rice"]
+    assert result[0]["servings"] == 4
+    assert result[0]["calories"] == 450
+    assert len(result[0]["ingredients"]) == 2
+    assert result[0]["ingredients"][0]["name"] == "chicken breast"
+    assert result[0]["ingredients"][0]["prep"] == "diced"
+    # The prompt has to ask for distinct options, or Gemini returns near-duplicates.
+    prompt = mock_model.generate_content.call_args[0][0]
+    assert "2 genuinely different recipes" in prompt
 
 
 @patch("app.gemini_client.genai.GenerativeModel")
-def test_get_recipe_info_raises_gemini_error_on_invalid_json(mock_model_cls):
+def test_search_recipes_raises_gemini_error_when_response_is_not_a_list(mock_model_cls):
+    _mock_model(mock_model_cls, json.dumps(FAKE_RECIPE))
+
+    with pytest.raises(GeminiError):
+        search_recipes("chicken fried rice")
+
+
+@patch("app.gemini_client.genai.GenerativeModel")
+def test_search_recipes_raises_gemini_error_on_invalid_json(mock_model_cls):
     _mock_model(mock_model_cls, "not json at all")
 
     with pytest.raises(GeminiError):
-        get_recipe_info("chicken fried rice")
+        search_recipes("chicken fried rice")
 
 
 @patch("app.gemini_client.genai.GenerativeModel")
-def test_get_recipe_info_raises_gemini_error_on_missing_required_key(mock_model_cls):
+def test_search_recipes_raises_gemini_error_on_missing_required_key(mock_model_cls):
     broken = dict(FAKE_RECIPE)
     del broken["calories"]
-    _mock_model(mock_model_cls, json.dumps(broken))
+    _mock_model(mock_model_cls, json.dumps([broken]))
 
     with pytest.raises(GeminiError):
-        get_recipe_info("chicken fried rice")
+        search_recipes("chicken fried rice")
 
 
 @patch("app.gemini_client.genai.GenerativeModel")
-def test_get_recipe_info_raises_gemini_error_when_api_call_fails(mock_model_cls):
+def test_search_recipes_raises_gemini_error_when_api_call_fails(mock_model_cls):
     mock_model = MagicMock()
     mock_model.generate_content.side_effect = RuntimeError("network exploded")
     mock_model_cls.return_value = mock_model
 
     with pytest.raises(GeminiError):
-        get_recipe_info("chicken fried rice")
+        search_recipes("chicken fried rice")
 
 
 @patch("app.gemini_client.genai.GenerativeModel")

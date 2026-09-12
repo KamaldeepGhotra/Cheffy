@@ -31,6 +31,7 @@ class InventoryItemOut(BaseModel):
 class RecipeSearchRequest(BaseModel):
     query: str
     household_id: str | None = None
+    count: int = Field(default=3, ge=1, le=6)
 
 
 class RecipeIngredientOut(BaseModel):
@@ -55,6 +56,33 @@ class RecipeOut(BaseModel):
 class RankedRecipeOut(RecipeOut):
     match_percentage: float
     missing_ingredients: list[str]
+
+
+class CandidateIngredient(BaseModel):
+    name: str
+    prep: str = ""
+    quantity: float
+    unit: str
+
+
+# A search result. Scored against inventory but not saved, so it has no id until
+# the client posts it back to POST /recipes.
+class RecipeCandidate(BaseModel):
+    name: str
+    servings: int
+    instructions: str
+    ingredients: list[CandidateIngredient]
+    calories: float | None = None
+    protein: float | None = None
+    fat: float | None = None
+    carbs: float | None = None
+    match_percentage: float
+    missing_ingredients: list[str]
+
+
+class RecipeSaveRequest(BaseModel):
+    candidate: RecipeCandidate
+    household_id: str | None = None
 
 
 class RecipeSuggestRequest(BaseModel):

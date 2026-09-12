@@ -1,11 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db import get_db
-from app.gemini_client import GeminiError, get_recipe_info, suggest_recipes
+from app.gemini_client import GeminiError, search_recipes, suggest_recipes
 from app.matching import normalize_ingredient_name, resolve_or_create_ingredient
 from app.models import DEFAULT_RECIPE_SERVINGS, Ingredient, InventoryItem, Recipe, RecipeIngredient
-from app.recipe_ranking import compute_match
-from app.schemas import RankedRecipeOut, RecipeIngredientOut, RecipeSearchRequest, RecipeSuggestRequest
+from app.recipe_ranking import compute_match, match_candidate
+from app.schemas import (
+    CandidateIngredient,
+    RankedRecipeOut,
+    RecipeCandidate,
+    RecipeIngredientOut,
+    RecipeSaveRequest,
+    RecipeSearchRequest,
+    RecipeSuggestRequest,
+)
 from app.units import normalize_unit
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
@@ -100,13 +108,50 @@ def _ranked(recipes: list[Recipe], on_hand: set[int]) -> list[RankedRecipeOut]:
     return ranked
 
 
-@router.post("/search", response_model=RankedRecipeOut, status_code=201)
+def _to_candidate(db: Session, info: dict, on_hand: set[int]) -> RecipeCandidate:
+    raw_ingredients = info["ingredients"]
+    percentage, missing = match_candidate(db, [raw["name"] for raw in raw_ingredients], on_hand)
+    return RecipeCandidate(
+        name=info["name"],
+        servings=_clamp_servings(info.get("servings", DEFAULT_RECIPE_SERVINGS)),
+        instructions=info["instructions"],
+        ingredients=[
+            CandidateIngredient(
+                name=raw["name"],
+                prep=raw.get("prep") or "",
+                quantity=raw["quantity"],
+                unit=normalize_unit(raw["unit"]),
+            )
+            for raw in raw_ingredients
+        ],
+        calories=info.get("calories"),
+        protein=info.get("protein"),
+        fat=info.get("fat"),
+        carbs=info.get("carbs"),
+        match_percentage=percentage,
+        missing_ingredients=missing,
+    )
+
+
+# Deliberately saves nothing: the user picks one of these and posts it back to POST /recipes,
+# so rejected results never reach the library.
+@router.post("/search", response_model=list[RecipeCandidate])
 def search_recipe(payload: RecipeSearchRequest, db: Session = Depends(get_db)):
     try:
-        recipe = _persist_recipe(db, get_recipe_info(payload.query))
+        infos = search_recipes(payload.query, payload.count)
     except GeminiError:
-        db.rollback()
         raise HTTPException(status_code=502, detail=UNAVAILABLE)
+    on_hand = _on_hand_ids(db, payload.household_id)
+    return [_to_candidate(db, info, on_hand) for info in infos]
+
+
+@router.post("", response_model=RankedRecipeOut, status_code=201)
+def save_recipe(payload: RecipeSaveRequest, db: Session = Depends(get_db)):
+    try:
+        recipe = _persist_recipe(db, payload.candidate.model_dump())
+    except GeminiError as exc:
+        db.rollback()
+        raise HTTPException(status_code=422, detail=str(exc))
     return _to_ranked(recipe, _on_hand_ids(db, payload.household_id))
 
 
