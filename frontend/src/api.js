@@ -79,3 +79,8 @@ export async function addMealPlanEntry({ householdId, weekStart, day, recipeId, 
 export async function deleteMealPlanEntry(entryId) {
   return request(`/meal-plan/${entryId}`, { method: 'DELETE' })
 }
+
+// Fields left out are left alone; pass null to clear day or assigned_to.
+export async function updateMealPlanEntry(entryId, fields) {
+  return request(`/meal-plan/${entryId}`, { method: 'PATCH', body: fields })
+}

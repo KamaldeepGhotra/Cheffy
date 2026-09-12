@@ -6,3 +6,54 @@
 .add-entry select { flex: 1 1 10rem; min-width: 0; }
 .add-entry input[type="number"] { width: 5rem; }
 .week-actions { margin-top: var(--space-5); }
+
+/* Planned tray: tap a card, then tap a day */
+.tray { margin-top: var(--space-4); }
+.tray-cards { display: grid; gap: var(--space-2); }
+.tray-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 160ms ease, border-color 160ms ease, transform 120ms ease;
+}
+.tray-card:hover { box-shadow: var(--shadow); }
+.tray-card:active { transform: scale(0.99); }
+.tray-card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent), var(--shadow-sm); }
+.tray-card:disabled { opacity: 0.55; cursor: default; }
+.tray-name { font-weight: 600; }
+.tray .hint { margin: var(--space-2) 0 0; font-size: var(--text-sm); }
+.loading .skeleton { width: 70%; }
+.loading .skeleton:nth-child(2) { width: 50%; }
+
+/* Scheduled entries: person chip, servings stepper, remove */
+.entry { flex-wrap: wrap; }
+.entry-name { flex: 1 1 auto; font-weight: 500; }
+.entry-controls { display: inline-flex; align-items: center; gap: var(--space-2); margin-left: auto; }
+.stepper { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); }
+.stepper button {
+  width: var(--tap);
+  min-height: var(--tap);
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font-size: var(--text-lg);
+  cursor: pointer;
+}
+.stepper button:disabled { opacity: 0.4; cursor: default; }
+.stepper span { min-width: 1.5em; text-align: center; font-weight: 600; }
+@media (max-width: 639px) {
+  .entry-name { flex-basis: 100%; }
+  .entry-controls { margin-left: 0; }
+}

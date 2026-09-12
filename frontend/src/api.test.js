@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { addInventoryItem, deleteInventoryItem, listInventory, searchRecipe } from './api.js'
+import { addInventoryItem, deleteInventoryItem, listInventory, searchRecipe, updateMealPlanEntry } from './api.js'
 
 function respond(status, body, statusText = '') {
   return {
@@ -81,5 +81,17 @@ describe('request helper', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respond(422, validationError, 'Unprocessable Entity')))
 
     await expect(searchRecipe('')).rejects.toThrow('Unprocessable Entity')
+  })
+
+  it('sends only the given meal plan fields on PATCH, keeping an explicit null', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(respond(200, { id: 7, day: null }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await updateMealPlanEntry(7, { day: null })
+
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe('http://localhost:8000/meal-plan/7')
+    expect(init.method).toBe('PATCH')
+    expect(JSON.parse(init.body)).toEqual({ day: null })
   })
 })
