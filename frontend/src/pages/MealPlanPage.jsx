@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { addMealPlanEntry, deleteMealPlanEntry, generateGroceryList, getMealPlan, listRecipes } from '../api.js'
 import { DAY_NAMES, dayOfWeek, formatDay, shiftWeeks, startOfWeek, toISODate } from '../week.js'
+import './plan.css'
 
 const HOUSEHOLD_ID = 'roommates'
 const MEMBERS = ['Andreas', 'Kam']
@@ -64,12 +65,12 @@ export default function MealPlanPage() {
   return (
     <div>
       <div className="week-nav">
-        <button type="button" onClick={() => setWeekStart(shiftWeeks(weekStart, -1))}>‹</button>
+        <button type="button" className="btn btn-ghost" onClick={() => setWeekStart(shiftWeeks(weekStart, -1))} aria-label="Previous week">‹</button>
         <h2>Week of {formatDay(weekStart)}</h2>
-        <button type="button" onClick={() => setWeekStart(shiftWeeks(weekStart, 1))}>›</button>
+        <button type="button" className="btn btn-ghost" onClick={() => setWeekStart(shiftWeeks(weekStart, 1))} aria-label="Next week">›</button>
       </div>
 
-      {recipes.length === 0 && <p className="preview">No recipes saved yet. Search for one on the Recipes tab first.</p>}
+      {recipes.length === 0 && <p className="empty">No recipes saved yet. Search for one on the Recipes tab first.</p>}
 
       {DAY_NAMES.map((name, day) => {
         const dayEntries = entries.filter((e) => e.day === day)
@@ -82,12 +83,12 @@ export default function MealPlanPage() {
             {dayEntries.length > 0 && (
               <ul>
                 {dayEntries.map((entry) => (
-                  <li key={entry.id}>
+                  <li key={entry.id} className="row">
                     <span>
                       {entry.recipe_name}
                       <span className="muted"> · {entry.servings} {entry.servings === 1 ? 'serving' : 'servings'} · {entry.assigned_to}</span>
                     </span>
-                    <button type="button" className="remove" onClick={() => remove(entry.id)} aria-label={`Remove ${entry.recipe_name}`}>×</button>
+                    <button type="button" className="btn btn-ghost" onClick={() => remove(entry.id)} aria-label={`Remove ${entry.recipe_name}`}>×</button>
                   </li>
                 ))}
               </ul>
@@ -101,8 +102,8 @@ export default function MealPlanPage() {
                   {MEMBERS.map((m) => <option key={m} value={m}>{m}</option>)}
                 </select>
                 <input type="number" min="1" value={adding.servings} onChange={(e) => setAdding({ ...adding, servings: e.target.value })} aria-label="Servings" />
-                <button className="primary" type="submit">Add</button>
-                <button type="button" onClick={() => setAdding(null)}>Cancel</button>
+                <button className="btn btn-primary" type="submit">Add</button>
+                <button type="button" className="btn" onClick={() => setAdding(null)}>Cancel</button>
               </form>
             )}
           </section>
@@ -110,7 +111,7 @@ export default function MealPlanPage() {
       })}
 
       <div className="week-actions">
-        <button type="button" className="primary" onClick={groceryForWeek} disabled={entries.length === 0}>
+        <button type="button" className="btn btn-primary" onClick={groceryForWeek} disabled={entries.length === 0}>
           Grocery list for this week
         </button>
       </div>
@@ -119,16 +120,16 @@ export default function MealPlanPage() {
         <div>
           <h3>Already have</h3>
           <ul>
-            {grocery.have.length === 0 && <li className="muted">Nothing yet</li>}
+            {grocery.have.length === 0 && <li className="row muted">Nothing yet</li>}
             {grocery.have.map((line, i) => (
-              <li key={i}><span>{line.ingredient_name}</span><span className="muted">{line.needed} {line.unit}</span></li>
+              <li key={i} className="row"><span>{line.ingredient_name}</span><span className="muted">{line.needed} {line.unit}</span></li>
             ))}
           </ul>
           <h3>Need to buy</h3>
           <ul>
-            {grocery.need.length === 0 && <li className="muted">Nothing, you're covered</li>}
+            {grocery.need.length === 0 && <li className="row muted">Nothing, you're covered</li>}
             {grocery.need.map((line, i) => (
-              <li key={i}><span>{line.ingredient_name}</span><span className="muted">{line.needed} {line.unit}</span></li>
+              <li key={i} className="row"><span>{line.ingredient_name}</span><span className="muted">{line.needed} {line.unit}</span></li>
             ))}
           </ul>
         </div>
