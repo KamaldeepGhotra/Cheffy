@@ -1,0 +1,42 @@
+.grocery-row { align-items: center; gap: var(--space-3); }
+
+/* The whole left side is the tap target, so checking a line off is easy on a phone. */
+.grocery-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  min-height: var(--tap);
+  padding: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.grocery-check:disabled { cursor: default; }
+
+.tick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  line-height: 1;
+}
+.grocery-check:hover:not(:disabled) .tick { border-color: var(--accent); }
+.tick-on {
+  border-color: var(--success);
+  background: var(--success);
+  color: var(--accent-text);
+}
+
+.grocery-text { display: flex; flex-direction: column; gap: 2px; }
+.grocery-name { font-weight: 500; }
+.grocery-for { font-size: var(--text-sm); }
+.grocery-qty { flex: none; white-space: nowrap; }
