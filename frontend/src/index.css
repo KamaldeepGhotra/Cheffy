@@ -270,6 +270,16 @@ button.chip:active { transform: scale(0.97); }
 .badge-success { background: color-mix(in srgb, var(--success) 16%, transparent); color: var(--success); }
 .badge-muted { color: var(--text-muted); }
 
+/* A heading with an action opposite it, e.g. "Need to buy (5)" and "Bought everything". */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+.section-head h3 { margin: 0; }
+
 /* Loading, error, empty */
 .skeleton {
   display: block;
@@ -280,6 +290,13 @@ button.chip:active { transform: scale(0.97); }
   animation: skeleton-pulse 1.2s ease-in-out infinite;
 }
 @keyframes skeleton-pulse { 50% { opacity: 0.5; } }
+
+/* Placeholder rows while a list loads. Uneven widths so it reads as text, not as bars.
+   Defined once here: page stylesheets are global, so a per-page .loading would win or
+   lose by load order depending on which tab you happened to open first. */
+.loading .skeleton { width: 65%; }
+.loading .skeleton:nth-child(2) { width: 45%; }
+.loading .skeleton:nth-child(3) { width: 70%; }
 
 .banner-error {
   display: flex;

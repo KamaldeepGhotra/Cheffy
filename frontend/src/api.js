@@ -97,3 +97,9 @@ export async function saveRecipe({ householdId, candidate }) {
 export async function suggestRecipes({ householdId, count = 3 }) {
   return request('/recipes/suggest', { method: 'POST', body: { household_id: householdId, count } })
 }
+
+// The week's shopping list, derived from every meal planned or scheduled for it.
+export async function getWeekGroceryList({ householdId, weekStart }) {
+  const params = new URLSearchParams({ household_id: householdId, week_start: weekStart })
+  return request(`/grocery-list?${params}`)
+}

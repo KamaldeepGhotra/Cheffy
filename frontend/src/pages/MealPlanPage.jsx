@@ -98,9 +98,24 @@ export default function MealPlanPage() {
     setAdding({ day, recipeId: recipes[0]?.id ?? '', assignedTo: getMe() ?? MEMBERS[0], servings: 1 })
   }
 
+  // A recipe sitting in the tray is already an entry for this week. Adding it again would
+  // make a second one, and the grocery list counts every entry — so move it instead.
+  function plannedMatch(recipeId) {
+    return planned.find((entry) => entry.recipe_id === Number(recipeId)) ?? null
+  }
+
   async function submitAdd(e) {
     e.preventDefault()
     if (!adding?.recipeId) return
+
+    const existing = plannedMatch(adding.recipeId)
+    if (existing) {
+      const { day, assignedTo, servings } = adding
+      setAdding(null)
+      patch(existing, { day, assigned_to: assignedTo, servings: Number(servings) })
+      return
+    }
+
     setActionError(null)
     try {
       const created = await addMealPlanEntry({
@@ -237,8 +252,13 @@ export default function MealPlanPage() {
                   {MEMBERS.map((m) => <option key={m} value={m}>{m}</option>)}
                 </select>
                 <input type="number" min="1" value={adding.servings} onChange={(e) => setAdding({ ...adding, servings: e.target.value })} aria-label="Servings" />
-                <button className="btn btn-primary" type="submit">Add</button>
+                <button className="btn btn-primary" type="submit">
+                  {plannedMatch(adding.recipeId) ? 'Move it here' : 'Add'}
+                </button>
                 <button type="button" className="btn" onClick={() => setAdding(null)}>Cancel</button>
+                {plannedMatch(adding.recipeId) && (
+                  <p className="hint muted">Already planned this week — this moves it here instead of adding a second one.</p>
+                )}
               </form>
             )}
           </section>

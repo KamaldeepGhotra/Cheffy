@@ -33,8 +33,6 @@
 .tray-card:disabled { opacity: 0.55; cursor: default; }
 .tray-name { font-weight: 600; }
 .tray .hint { margin: var(--space-2) 0 0; font-size: var(--text-sm); }
-.loading .skeleton { width: 70%; }
-.loading .skeleton:nth-child(2) { width: 50%; }
 
 /* Scheduled entries: person chip, servings stepper, remove */
 .entry { flex-wrap: wrap; }

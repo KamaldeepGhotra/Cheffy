@@ -15,6 +15,3 @@
 .suggestions li:last-child { border-bottom: 0; }
 .suggestions li:hover { background: var(--bg); }
 .chips { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
-.loading .skeleton { width: 60%; }
-.loading .skeleton:nth-child(2) { width: 45%; }
-.loading .skeleton:nth-child(3) { width: 70%; }
