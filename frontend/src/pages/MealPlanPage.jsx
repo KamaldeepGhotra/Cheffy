@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import {
   addMealPlanEntry,
   deleteMealPlanEntry,
-  generateGroceryList,
   getMealPlan,
   listRecipes,
   updateMealPlanEntry,
@@ -30,7 +29,6 @@ export default function MealPlanPage() {
   const [adding, setAdding] = useState(null)
   const [selectedId, setSelectedId] = useState(null)
   const [busyId, setBusyId] = useState(null)
-  const [grocery, setGrocery] = useState(null)
 
   const weekKey = toISODate(weekStart)
   const planned = (entries ?? []).filter((e) => e.day == null)
@@ -51,7 +49,6 @@ export default function MealPlanPage() {
 
   useEffect(() => {
     setEntries(null)
-    setGrocery(null)
     setSelectedId(null)
     setAdding(null)
     refresh()
@@ -128,21 +125,6 @@ export default function MealPlanPage() {
       })
       setEntries((prev) => [...(prev ?? []), created])
       setAdding(null)
-    } catch (err) {
-      setActionError(err.message)
-    }
-  }
-
-  async function groceryForWeek() {
-    const servings = {}
-    for (const entry of entries ?? []) {
-      servings[entry.recipe_id] = (servings[entry.recipe_id] ?? 0) + entry.servings
-    }
-    const recipeIds = Object.keys(servings).map(Number)
-    if (recipeIds.length === 0) return
-    setActionError(null)
-    try {
-      setGrocery(await generateGroceryList({ householdId: HOUSEHOLD_ID, recipeIds, servings }))
     } catch (err) {
       setActionError(err.message)
     }
@@ -264,31 +246,6 @@ export default function MealPlanPage() {
           </section>
         )
       })}
-
-      <div className="week-actions">
-        <button type="button" className="btn btn-secondary" onClick={groceryForWeek} disabled={!entries || entries.length === 0}>
-          Grocery list for this week
-        </button>
-      </div>
-
-      {grocery && (
-        <div>
-          <h3>Already have</h3>
-          <ul>
-            {grocery.have.length === 0 && <li className="row muted">Nothing yet</li>}
-            {grocery.have.map((line, i) => (
-              <li key={i} className="row"><span>{line.ingredient_name}</span><span className="muted">{line.needed} {line.unit}</span></li>
-            ))}
-          </ul>
-          <h3>Need to buy</h3>
-          <ul>
-            {grocery.need.length === 0 && <li className="row muted">Nothing, you're covered</li>}
-            {grocery.need.map((line, i) => (
-              <li key={i} className="row"><span>{line.ingredient_name}</span><span className="muted">{line.needed} {line.unit}</span></li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   )
 }

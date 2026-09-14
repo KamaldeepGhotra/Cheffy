@@ -37,13 +37,6 @@ export async function searchIngredients(query) {
   return request(`/ingredients/search?${params}`)
 }
 
-export async function generateGroceryList({ householdId, recipeIds, servings }) {
-  return request('/grocery-list', {
-    method: 'POST',
-    body: { household_id: householdId, recipe_ids: recipeIds, servings },
-  })
-}
-
 export async function deleteInventoryItem(itemId) {
   return request(`/inventory/${itemId}`, { method: 'DELETE' })
 }

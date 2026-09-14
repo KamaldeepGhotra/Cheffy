@@ -5,7 +5,6 @@
 .add-entry { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
 .add-entry select { flex: 1 1 10rem; min-width: 0; }
 .add-entry input[type="number"] { width: 5rem; }
-.week-actions { margin-top: var(--space-5); }
 
 /* Planned tray: tap a card, then tap a day */
 .tray { margin-top: var(--space-4); }
