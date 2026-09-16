@@ -68,3 +68,6 @@
 .candidate-card:active { transform: none; }
 .candidate-meta { font-size: var(--text-sm); }
 .candidate-card .btn { margin-top: auto; align-self: stretch; }
+
+/* Only the best two rows show by default; the rest are behind this. */
+.show-all { margin-top: var(--space-3); }
