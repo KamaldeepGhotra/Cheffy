@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { addMealPlanEntry, deleteMealPlanEntry, listRecipes, saveRecipe, searchRecipeCandidates, suggestRecipes } from '../api.js'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { addMealPlanEntry, deleteMealPlanEntry, listInventory, listRecipes, saveRecipe, searchRecipeCandidates, suggestRecipes } from '../api.js'
 import { startOfWeek, toISODate } from '../week.js'
 import './recipes.css'
 
@@ -21,6 +21,54 @@ function storeCandidates(candidates) {
     if (candidates.length === 0) sessionStorage.removeItem(CANDIDATES_KEY)
     else sessionStorage.setItem(CANDIDATES_KEY, JSON.stringify(candidates))
   } catch {}
+}
+
+// What the kitchen looked like when we last asked for ideas. Comparing against it means a
+// grocery run brings fresh suggestions, while just flicking between tabs costs no API call.
+const SUGGESTED_FOR_KEY = 'cheffy.suggestedFor'
+
+function inventoryFingerprint(items) {
+  return items.map((item) => item.ingredient_id).sort((a, b) => a - b).join(',')
+}
+
+function lastSuggestedFor() {
+  try {
+    return localStorage.getItem(SUGGESTED_FOR_KEY)
+  } catch {
+    return null
+  }
+}
+
+function rememberSuggestedFor(fingerprint) {
+  try {
+    localStorage.setItem(SUGGESTED_FOR_KEY, fingerprint)
+  } catch {}
+}
+
+// How many cards fit in VISIBLE_ROWS at the current width. The grid's column count comes from
+// media queries, so it has to be read off the element rather than guessed from window size.
+const VISIBLE_ROWS = 2
+
+function useRowCapacity(gridRef, rows) {
+  const [columns, setColumns] = useState(2)
+
+  useLayoutEffect(() => {
+    const el = gridRef.current
+    if (!el) return undefined
+
+    function measure() {
+      const template = getComputedStyle(el).gridTemplateColumns
+      const count = template.split(' ').filter(Boolean).length
+      setColumns(count || 1)
+    }
+
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    return () => observer.disconnect()
+  })
+
+  return columns * rows
 }
 
 function badgeClass(percentage) {
@@ -157,8 +205,10 @@ export default function RecipeSearchPage() {
   const [openId, setOpenId] = useState(null)
   const [planned, setPlanned] = useState({})
   const [planningId, setPlanningId] = useState(null)
+  const [expanded, setExpanded] = useState(false)
   // React StrictMode runs effects twice in dev; without this guard an empty library gets six suggestions.
   const autoSuggested = useRef(false)
+  const gridRef = useRef(null)
 
   // One writer, so what's on screen and what's in storage can't drift apart.
   function setCandidates(next) {
@@ -182,10 +232,21 @@ export default function RecipeSearchPage() {
   async function load() {
     setLoadError(null)
     try {
-      const list = await listRecipes(HOUSEHOLD_ID)
+      const [list, inventory] = await Promise.all([
+        listRecipes(HOUSEHOLD_ID),
+        listInventory(HOUSEHOLD_ID),
+      ])
       setRecipes(list)
-      if (list.length === 0 && !autoSuggested.current) {
+
+      if (autoSuggested.current) return
+      const fingerprint = inventoryFingerprint(inventory)
+      // Nothing to cook from, or the same ingredients as last time: leave the list alone.
+      const groceriesChanged = inventory.length > 0 && fingerprint !== lastSuggestedFor()
+      if (list.length === 0 || groceriesChanged) {
         autoSuggested.current = true
+        // Recorded before the request, not after: StrictMode's double mount gets a fresh ref,
+        // so anything written only on success arrives too late to stop the second call.
+        rememberSuggestedFor(fingerprint)
         getIdeas()
       }
     } catch (err) {
@@ -269,6 +330,8 @@ export default function RecipeSearchPage() {
   }
 
   const list = recipes ?? []
+  const capacity = useRowCapacity(gridRef, VISIBLE_ROWS)
+  const visible = expanded ? list : list.slice(0, capacity)
   const openRecipe = list.find((recipe) => recipe.id === openId) ?? null
 
   return (
@@ -321,7 +384,7 @@ export default function RecipeSearchPage() {
 
       <div className="section-head">
         <h3>Suggested for your kitchen</h3>
-        <button type="button" className="btn" onClick={getIdeas} disabled={suggesting}>
+        <button type="button" className="btn" onClick={() => getIdeas()} disabled={suggesting}>
           {suggesting ? 'Thinking…' : 'Get ideas'}
         </button>
       </div>
@@ -338,11 +401,18 @@ export default function RecipeSearchPage() {
         </p>
       )}
       {list.length > 0 && (
-        <div className="recipe-list">
-          {list.map((recipe) => (
-            <RecipeCard key={recipe.id} recipe={recipe} onOpen={() => setOpenId(recipe.id)} />
-          ))}
-        </div>
+        <>
+          <div className="recipe-list" ref={gridRef}>
+            {visible.map((recipe) => (
+              <RecipeCard key={recipe.id} recipe={recipe} onOpen={() => setOpenId(recipe.id)} />
+            ))}
+          </div>
+          {list.length > capacity && (
+            <button type="button" className="btn btn-ghost show-all" onClick={() => setExpanded(!expanded)}>
+              {expanded ? 'Show fewer' : `Show all (${list.length})`}
+            </button>
+          )}
+        </>
       )}
 
       {openRecipe && (

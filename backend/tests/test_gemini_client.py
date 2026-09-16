@@ -41,7 +41,10 @@ def test_search_recipes_parses_structured_response(mock_model_cls):
     assert result[0]["ingredients"][0]["prep"] == "diced"
     # The prompt has to ask for distinct options, or Gemini returns near-duplicates.
     prompt = mock_model.generate_content.call_args[0][0]
-    assert "2 genuinely different recipes" in prompt
+    assert "2 genuinely different takes" in prompt
+    # The audience and the reheat requirement are what stop it returning generic weeknight food.
+    assert "meal prep" in prompt
+    assert "three days in the fridge" in prompt
 
 
 @patch("app.gemini_client.genai.GenerativeModel")
@@ -115,8 +118,8 @@ def test_suggest_recipes_uses_empty_inventory_wording_when_no_ingredients(mock_m
     suggest_recipes([], count=3)
 
     prompt_sent = mock_model.generate_content.call_args[0][0]
-    assert "simple, popular dishes" in prompt_sent
-    assert "Using primarily these ingredients" not in prompt_sent
+    assert "kitchen is empty" in prompt_sent
+    assert "Right now they have" not in prompt_sent
 
 
 @patch("app.gemini_client.genai.GenerativeModel")
@@ -126,5 +129,8 @@ def test_suggest_recipes_mentions_ingredients_in_prompt_when_provided(mock_model
     suggest_recipes(["white rice", "garlic"], count=2)
 
     prompt_sent = mock_model.generate_content.call_args[0][0]
-    assert "white rice, garlic" in prompt_sent
-    assert "simple, popular dishes" not in prompt_sent
+    assert "Right now they have: white rice, garlic" in prompt_sent
+    assert "kitchen is empty" not in prompt_sent
+    # The ladder is the whole point: without it every suggestion scores the same match.
+    assert "cook immediately" in prompt_sent
+    assert "worth a small shop" in prompt_sent
